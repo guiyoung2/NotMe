@@ -65,4 +65,40 @@ describe('GameShell', () => {
     expect(onReset).toHaveBeenCalledTimes(1);
     expect(screen.getByText('/stopwatch')).toBeInTheDocument();
   });
+
+  it('확인창을 열면 취소 버튼으로 포커스를 옮긴다', async () => {
+    const user = userEvent.setup();
+    renderShell({ dirty: true });
+
+    await user.click(screen.getByRole('button', { name: '홈으로' }));
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: '취소' })).toHaveFocus();
+  });
+
+  it('확인창 안에서 Tab과 Shift+Tab 포커스를 순환한다', async () => {
+    const user = userEvent.setup();
+    renderShell({ dirty: true });
+
+    await user.click(screen.getByRole('button', { name: '홈으로' }));
+    const dialog = screen.getByRole('dialog');
+    const cancelButton = within(dialog).getByRole('button', { name: '취소' });
+    const confirmButton = within(dialog).getByRole('button', { name: '종료' });
+
+    await user.tab();
+    expect(confirmButton).toHaveFocus();
+    await user.tab();
+    expect(cancelButton).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(confirmButton).toHaveFocus();
+  });
+
+  it('확인창을 닫으면 원래 트리거로 포커스를 돌린다', async () => {
+    const user = userEvent.setup();
+    renderShell({ dirty: true });
+    const homeButton = screen.getByRole('button', { name: '홈으로' });
+
+    await user.click(homeButton);
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '취소' }));
+
+    expect(homeButton).toHaveFocus();
+  });
 });
