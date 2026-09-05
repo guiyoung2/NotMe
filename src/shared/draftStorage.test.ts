@@ -33,6 +33,17 @@ describe('draftStorage', () => {
     expect(localStorage.getItem('notme:draft:marble')).toBeNull();
   });
 
+  it.each([
+    ['null', 'null'],
+    ['배열', '[]'],
+    ['payload가 없는 객체', JSON.stringify({ version: 1 })],
+  ])('%s 형태의 현재 판은 삭제하고 null을 반환한다', (_description, rawDraft) => {
+    localStorage.setItem('notme:draft:marble', rawDraft);
+
+    expect(loadDraft('marble', isAnyPayload)).toBeNull();
+    expect(localStorage.getItem('notme:draft:marble')).toBeNull();
+  });
+
   it('payload 검증에 실패한 현재 판은 삭제하고 null을 반환한다', () => {
     localStorage.setItem('notme:draft:stopwatch', JSON.stringify({ version: 1, payload: {} }));
 
