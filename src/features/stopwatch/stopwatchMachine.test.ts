@@ -59,8 +59,79 @@ describe('stopwatchReducer', () => {
 });
 
 describe('isStopwatchDraft', () => {
-  it('유효한 스톱워치 상태만 draft로 판별한다', () => {
-    expect(isStopwatchDraft(createStopwatchGame(['짱구']))).toBe(true);
+  it('playing, result, draw 상태를 draft로 판별한다', () => {
+    const playing = createStopwatchGame(['짱구', '철수']);
+    const [jjanggu, cheolsu] = playing.players;
+    const result = {
+      ...playing,
+      phase: 'result' as const,
+      players: [
+        { ...jjanggu, attempts: [1, 2], score: 2 },
+        { ...cheolsu, attempts: [3, 4], score: 12 },
+      ],
+      currentPlayerIndex: 1,
+    };
+    const draw = {
+      ...createStopwatchGame(['짱구', '철수', '유리']),
+      players: [
+        { id: 'player-0', name: '짱구', attempts: [], score: null },
+        { id: 'player-1', name: '철수', attempts: [], score: null },
+        { id: 'player-2', name: '유리', attempts: [3, 4], score: 12 },
+      ],
+      roundPlayerIds: ['player-0', 'player-1'],
+      round: 2,
+    };
+
+    expect(isStopwatchDraft(playing)).toBe(true);
+    expect(isStopwatchDraft(result)).toBe(true);
+    expect(isStopwatchDraft(draw)).toBe(true);
+  });
+
+  it.each([
+    ['참가자가 한 명뿐인 상태', () => {
+      const state = createStopwatchGame(['짱구', '철수']);
+      return { ...state, players: [state.players[0]], roundPlayerIds: [state.players[0].id] };
+    }],
+    ['중복 참가자 ID', () => {
+      const state = createStopwatchGame(['짱구', '철수']);
+      return { ...state, players: [{ ...state.players[0] }, { ...state.players[1], id: state.players[0].id }] };
+    }],
+    ['존재하지 않는 라운드 참가자', () => {
+      const state = createStopwatchGame(['짱구', '철수']);
+      return { ...state, roundPlayerIds: [state.players[0].id, 'missing'] };
+    }],
+    ['중복 라운드 참가자', () => {
+      const state = createStopwatchGame(['짱구', '철수']);
+      return { ...state, roundPlayerIds: [state.players[0].id, state.players[0].id] };
+    }],
+    ['범위를 벗어난 현재 참가자 인덱스', () => {
+      const state = createStopwatchGame(['짱구', '철수']);
+      return { ...state, currentPlayerIndex: 2 };
+    }],
+    ['현재 라운드에 없는 현재 참가자', () => {
+      const state = createStopwatchGame(['짱구', '철수', '유리']);
+      return { ...state, roundPlayerIds: [state.players[0].id, state.players[2].id], currentPlayerIndex: 1 };
+    }],
+    ['범위를 벗어난 측정 숫자', () => {
+      const state = createStopwatchGame(['짱구', '철수']);
+      return { ...state, players: [{ ...state.players[0], attempts: [10] }, state.players[1]] };
+    }],
+    ['측정값과 일치하지 않는 점수', () => {
+      const state = createStopwatchGame(['짱구', '철수']);
+      return {
+        ...state,
+        players: [
+          { ...state.players[0], attempts: [4, 9], score: 35 },
+          state.players[1],
+        ],
+        currentPlayerIndex: 1,
+      };
+    }],
+  ])('%s은 draft로 판별하지 않는다', (_description, createInvalidDraft) => {
+    expect(isStopwatchDraft(createInvalidDraft())).toBe(false);
+  });
+
+  it('필수 필드가 없는 값과 null을 draft로 판별하지 않는다', () => {
     expect(isStopwatchDraft({ phase: 'playing', players: [] })).toBe(false);
     expect(isStopwatchDraft(null)).toBe(false);
   });

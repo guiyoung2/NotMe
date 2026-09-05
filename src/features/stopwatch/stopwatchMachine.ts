@@ -100,21 +100,88 @@ export function stopwatchReducer(state: StopwatchState, action: StopwatchAction)
 }
 
 export function isStopwatchDraft(value: unknown): value is StopwatchState {
-  if (!isRecord(value) || (value.phase !== 'playing' && value.phase !== 'result') || !Array.isArray(value.players)
-    || !Array.isArray(value.roundPlayerIds) || !Number.isInteger(value.currentPlayerIndex)
-    || !(typeof value.startedAt === 'number' || value.startedAt === null) || !Number.isInteger(value.round)) {
+  if (!isStopwatchStateShape(value) || value.round < 1 || value.players.length < 2
+    || !hasUniqueIds(value.players) || value.roundPlayerIds.length < 2
+    || !hasUniqueValues(value.roundPlayerIds)) {
     return false;
   }
 
-  return value.players.every(isPlayerRun) && value.roundPlayerIds.every((id) => typeof id === 'string');
+  const playerIds = new Set(value.players.map(({ id }) => id));
+  if (!value.roundPlayerIds.every((id) => typeof id === 'string' && playerIds.has(id))
+    || value.currentPlayerIndex < 0 || value.currentPlayerIndex >= value.players.length
+    || !value.roundPlayerIds.includes(value.players[value.currentPlayerIndex].id)
+    || !hasRoundPlayerOrder(value.players, value.roundPlayerIds)) {
+    return false;
+  }
+
+  return value.phase === 'result'
+    ? value.startedAt === null && value.players.every(isFinishedPlayer)
+    : isValidPlayingState(value);
+}
+
+function isStopwatchStateShape(value: unknown): value is StopwatchState {
+  return isRecord(value) && (value.phase === 'playing' || value.phase === 'result')
+    && isPlayerRuns(value.players) && isStringArray(value.roundPlayerIds)
+    && Number.isInteger(value.currentPlayerIndex)
+    && (typeof value.startedAt === 'number' && Number.isFinite(value.startedAt) || value.startedAt === null)
+    && Number.isInteger(value.round);
 }
 
 function isPlayerRun(value: unknown): value is PlayerRun {
   return isRecord(value) && typeof value.id === 'string' && typeof value.name === 'string'
-    && Array.isArray(value.attempts) && value.attempts.every((attempt) => typeof attempt === 'number')
-    && (typeof value.score === 'number' || value.score === null);
+    && Array.isArray(value.attempts) && value.attempts.length <= 2
+    && value.attempts.every((attempt) => Number.isInteger(attempt) && attempt >= 0 && attempt <= 9)
+    && (value.attempts.length === 2
+      ? value.score === multiplyDigits([value.attempts[0], value.attempts[1]])
+      : value.score === null);
+}
+
+function isPlayerRuns(value: unknown): value is PlayerRun[] {
+  return Array.isArray(value) && value.every(isPlayerRun);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+function hasUniqueIds(players: PlayerRun[]): boolean {
+  return hasUniqueValues(players.map(({ id }) => id));
+}
+
+function hasUniqueValues(values: string[]): boolean {
+  return new Set(values).size === values.length;
+}
+
+function hasRoundPlayerOrder(players: PlayerRun[], roundPlayerIds: string[]): boolean {
+  const playerOrder = players
+    .filter(({ id }) => roundPlayerIds.includes(id))
+    .map(({ id }) => id);
+
+  return playerOrder.every((id, index) => id === roundPlayerIds[index]);
+}
+
+function isFinishedPlayer(player: PlayerRun): boolean {
+  return player.attempts.length === 2;
+}
+
+function isValidPlayingState(state: StopwatchState): boolean {
+  return state.players.every((player, index) => {
+    if (!state.roundPlayerIds.includes(player.id)) {
+      return isFinishedPlayer(player);
+    }
+
+    if (index < state.currentPlayerIndex) {
+      return isFinishedPlayer(player);
+    }
+
+    if (index === state.currentPlayerIndex) {
+      return player.attempts.length < 2;
+    }
+
+    return player.attempts.length === 0;
+  });
 }
