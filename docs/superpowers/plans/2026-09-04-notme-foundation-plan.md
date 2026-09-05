@@ -16,14 +16,14 @@
 - 기본 테마는 짙은 갈색 배경과 주황 강조색의 웜 다크다.
 - 서버, 로그인, 데이터베이스와 앱 공통 참가자 명단을 만들지 않는다.
 - 게임 상태는 서로 공유하지 않으며 홈으로 이동하거나 초기화하면 현재 판과 복구 데이터를 삭제한다.
-- GitHub Pages의 `/NotMe/` 기본 경로와 오프라인 실행을 지원한다.
+- Vercel 루트 경로(`/`)와 오프라인 실행을 지원한다.
 
 ---
 
 ## File Structure
 
 - `package.json` — 실행, 검사, 테스트, 빌드 스크립트와 의존성
-- `vite.config.ts` — React, Vitest, PWA와 `/NotMe/` 기본 경로
+- `vite.config.ts` — React, Vitest, PWA와 `/` 기본 경로
 - `src/main.tsx` — React 진입점
 - `src/app/App.tsx` — 브라우저 라우터와 네 경로
 - `src/app/HomePage.tsx` — 미니멀 목록형 게임 선택 홈
@@ -336,8 +336,8 @@ VitePWA({
   manifest: {
     name: 'NotMe',
     short_name: 'NotMe',
-    start_url: '/NotMe/',
-    scope: '/NotMe/',
+    start_url: '/',
+    scope: '/',
     display: 'standalone',
     background_color: '#1b1715',
     theme_color: '#1b1715',
@@ -351,7 +351,7 @@ VitePWA({
 })
 ```
 
-`vite.config.ts`의 `base`는 production에서 `/NotMe/`, development에서 `/`로 설정한다. `ReloadPrompt`는 홈에만 렌더링한다. 따라서 진행 중인 게임 위에 업데이트 버튼이 나타나지 않으며 홈으로 돌아온 뒤 안전하게 새 버전을 적용한다.
+`vite.config.ts`의 `base`는 development와 production 모두 `/`로 설정한다. `ReloadPrompt`는 홈에만 렌더링한다. 따라서 진행 중인 게임 위에 업데이트 버튼이 나타나지 않으며 홈으로 돌아온 뒤 안전하게 새 버전을 적용한다.
 
 - [ ] **Step 3: 설치 자산과 빌드를 검사한다**
 

@@ -2,8 +2,8 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig(({ command }) => ({
-  base: command === 'serve' ? '/' : '/NotMe/',
+export default defineConfig({
+  base: '/',
   plugins: [
     react(),
     VitePWA({
@@ -11,8 +11,8 @@ export default defineConfig(({ command }) => ({
       manifest: {
         name: 'NotMe',
         short_name: 'NotMe',
-        start_url: '/NotMe/',
-        scope: '/NotMe/',
+        start_url: '/',
+        scope: '/',
         display: 'standalone',
         background_color: '#1b1715',
         theme_color: '#1b1715',
@@ -29,4 +29,4 @@ export default defineConfig(({ command }) => ({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
   },
-}));
+});

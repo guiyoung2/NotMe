@@ -1,10 +1,9 @@
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { App } from './App';
 
 afterEach(() => {
   cleanup();
-  vi.unstubAllEnvs();
   window.history.replaceState({}, '', '/');
 });
 
@@ -24,10 +23,10 @@ describe('App', () => {
   });
 
   it.each([
-    ['/NotMe/', '게임 선택'],
-    ['/NotMe/stopwatch', '스톱워치'],
-  ])('%s 배포 경로를 렌더링한다', (pathname, heading) => {
-    vi.stubEnv('BASE_URL', '/NotMe/');
+    ['/', '게임 선택'],
+    ['/stopwatch', '스톱워치'],
+    ['/marble', '마블 룰렛'],
+  ])('%s 루트 배포 경로를 렌더링한다', (pathname, heading) => {
     window.history.replaceState({}, '', pathname);
 
     render(<App />);

@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 세 게임의 공통 동작, 모바일 성능, PWA 오프라인 실행과 GitHub Pages 자동 배포를 검증해 MVP를 출시 가능한 상태로 만든다.
+**Goal:** 세 게임의 공통 동작, 모바일 성능, PWA 오프라인 실행과 Vercel 직접 배포 준비를 검증해 MVP를 출시 가능한 상태로 만든다.
 
-**Architecture:** Playwright가 실제 production build를 대상으로 핵심 사용자 흐름과 오프라인 동작을 검사한다. GitHub Actions는 단위·브라우저 테스트와 빌드가 모두 통과한 커밋만 Pages artifact로 배포한다. SPA deep link는 `404.html` fallback으로 복구한다.
+**Architecture:** Playwright가 실제 production build를 대상으로 핵심 사용자 흐름과 오프라인 동작을 검사한다. Vercel용 SPA deep link는 이후 `vercel.json` rewrite로 `index.html`을 제공하도록 검증한다. 사용자가 Vercel 프로젝트를 직접 연결해 배포하며, 이 계획은 실제 연결이나 배포를 수행하지 않는다.
 
-**Tech Stack:** Vitest, Playwright, Vite PWA, GitHub Actions, GitHub Pages
+**Tech Stack:** Vitest, Playwright, Vite PWA, Vercel
 
 **Spec:** `docs/superpowers/specs/2026-09-04-notme-mvp-design.md`
 
@@ -28,10 +28,8 @@
 - `e2e/ladder.spec.ts` — 설정과 개별·전체 공개
 - `e2e/marble.spec.ts` — 설정, 배속, 결과와 100구슬 완주
 - `e2e/pwa.spec.ts` — Manifest, 서비스 워커와 오프라인 경로
-- `scripts/copy-spa-fallback.mjs` — `dist/index.html`을 `dist/404.html`로 복사
 - `src/vite-env.d.ts` — E2E 전용 읽기 스냅샷 타입
-- `.github/workflows/ci.yml` — pull request와 main 검사
-- `.github/workflows/deploy.yml` — main의 Pages 배포
+- `vercel.json` — Vercel SPA deep link rewrite
 - `README.md` — 개발·테스트·배포·라이선스 안내
 
 ### Task 1: production build 브라우저 테스트 기반
@@ -66,7 +64,7 @@ npx playwright install chromium
 import { expect, test } from '@playwright/test';
 
 test('홈에서 세 게임으로 이동할 수 있다', async ({ page }) => {
-  await page.goto('/NotMe/');
+  await page.goto('/');
   await expect(page.getByRole('heading', { name: '게임 선택' })).toBeVisible();
   await page.getByRole('link', { name: /스톱워치/ }).click();
   await expect(page).toHaveURL(/\/stopwatch$/);
@@ -148,7 +146,7 @@ git commit -m "세 게임 핵심 사용자 흐름 검증"
 
 ```ts
 test('100개 구슬이 제한 시간 안에 순위를 확정한다', async ({ page }) => {
-  await page.goto('/NotMe/marble');
+  await page.goto('/marble');
   await page.getByLabel('참가자 1 구슬 수').fill('50');
   await page.getByLabel('참가자 2 구슬 수').fill('50');
   await page.getByRole('button', { name: '레이스 시작' }).click();
@@ -194,7 +192,7 @@ git commit -m "100구슬 모바일 완주 성능 검증"
 
 ```ts
 test('설치 정보와 서비스 워커를 제공한다', async ({ page }) => {
-  await page.goto('/NotMe/');
+  await page.goto('/');
   const manifest = await page.locator('link[rel="manifest"]').getAttribute('href');
   expect(manifest).toBeTruthy();
   await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true);
@@ -203,11 +201,11 @@ test('설치 정보와 서비스 워커를 제공한다', async ({ page }) => {
 
 - [ ] **Step 2: 오프라인 경로 테스트를 작성한다**
 
-온라인에서 홈과 세 게임 경로를 한 번 연 뒤 `context.setOffline(true)`로 전환한다. `/NotMe/`, `/NotMe/stopwatch`, `/NotMe/ladder`, `/NotMe/marble`을 차례로 열어 제목이 표시되는지 확인하고 테스트 종료 전에 반드시 offline을 해제한다.
+온라인에서 홈과 세 게임 경로를 한 번 연 뒤 `context.setOffline(true)`로 전환한다. `/`, `/stopwatch`, `/ladder`, `/marble`을 차례로 열어 제목이 표시되는지 확인하고 테스트 종료 전에 반드시 offline을 해제한다.
 
 - [ ] **Step 3: 캐시 누락을 수정한다**
 
-Workbox glob이 HTML, JS, CSS, PNG, SVG, WASM을 포함하도록 `globPatterns`를 `['**/*.{html,js,css,png,svg,wasm}']`로 설정한다. navigation fallback은 `/NotMe/index.html`이 아니라 Vite base 기준 `index.html`을 사용한다.
+Workbox glob이 HTML, JS, CSS, PNG, SVG, WASM을 포함하도록 `globPatterns`를 `['**/*.{html,js,css,png,svg,wasm}']`로 설정한다. navigation fallback은 Vercel 루트 기준 `index.html`을 사용한다.
 
 - [ ] **Step 4: PWA 검사를 실행한다**
 
@@ -221,46 +219,47 @@ git add e2e/pwa.spec.ts vite.config.ts
 git commit -m "PWA 설치와 오프라인 실행 검증"
 ```
 
-### Task 5: GitHub Pages 자동 배포
+### Task 5: Vercel 직접 배포 준비
 
 **Files:**
-- Create: `scripts/copy-spa-fallback.mjs`
-- Modify: `package.json`
-- Create: `.github/workflows/ci.yml`
-- Create: `.github/workflows/deploy.yml`
+- Create: `vercel.json`
+- Modify: `README.md`
 
 **Interfaces:**
-- Consumes: `npm ci`, `npm run verify`, `dist/`
-- Produces: `main` 커밋의 GitHub Pages 배포 artifact
+- Consumes: `npm run verify`, `dist/`
+- Produces: Vercel SPA rewrite 검증과 사용자 직접 연결 안내
 
-- [ ] **Step 1: SPA fallback 스크립트를 작성한다**
+- [ ] **Step 1: Vercel SPA rewrite를 작성한다**
 
-```js
-import { copyFile } from 'node:fs/promises';
-
-await copyFile(new URL('../dist/index.html', import.meta.url), new URL('../dist/404.html', import.meta.url));
+```json
+{
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
 ```
 
-`package.json`의 build를 `tsc -b && vite build && node scripts/copy-spa-fallback.mjs`로 바꾼다.
+`vercel.json`은 `/stopwatch`, `/ladder`, `/marble` 같은 deep link에 앱 셸을 반환한다.
 
-- [ ] **Step 2: CI workflow를 작성한다**
+- [ ] **Step 2: SPA rewrite를 검증한다**
 
-`pull_request`와 `main` push에서 checkout, Node 24 setup, `npm ci`, `npx playwright install --with-deps chromium`, `npm run verify`를 실행한다. 권한은 `contents: read`만 사용한다.
+Run: `npm run build && node -e "const config = require('./vercel.json'); if (config.rewrites?.[0]?.source !== '/(.*)' || config.rewrites[0].destination !== '/index.html') process.exit(1)"`
 
-- [ ] **Step 3: Pages workflow를 작성한다**
+Expected: production build와 Vercel SPA rewrite 설정이 통과한다. 이 단계에서는 실제 Vercel 배포를 실행하지 않는다.
 
-main push와 수동 실행에서 CI와 같은 검사를 통과한 뒤 `actions/configure-pages`, `actions/upload-pages-artifact`의 `./dist`, `actions/deploy-pages`를 실행한다. 권한은 `contents: read`, `pages: write`, `id-token: write`로 제한하고 concurrency group은 `pages`로 둔다.
+- [ ] **Step 3: 사용자의 Vercel 직접 연결 방법을 안내한다**
 
-- [ ] **Step 4: workflow와 production 경로를 검사한다**
+README에 사용자가 Vercel 대시보드에서 저장소를 Import하고 Build Command를 `npm run build`, Output Directory를 `dist`로 확인하는 절차와 `vercel.json`이 deep link를 처리한다는 내용을 기록한다. 이 계획이나 자동화는 Vercel 계정을 연결하거나 실제 배포하지 않는다.
 
-Run: `npm run build && test -f dist/404.html && rg -n "/NotMe/" dist/index.html dist/manifest.webmanifest`
-Expected: 모든 파일 존재, 배포 자산 URL이 `/NotMe/`를 기준으로 함.
+- [ ] **Step 4: Vercel 설정과 루트 경로를 검사한다**
+
+Run: `npm run build && node -e "const fs = require('node:fs'); const manifest = JSON.parse(fs.readFileSync('dist/manifest.webmanifest', 'utf8')); if (manifest.start_url !== '/' || manifest.scope !== '/') process.exit(1)"`
+
+Expected: Manifest가 `/` 기준이다.
 
 - [ ] **Step 5: 커밋한다**
 
 ```bash
-git add package.json scripts .github
-git commit -m "GitHub Pages 자동 배포 구성"
+git add vercel.json README.md
+git commit -m "Vercel 직접 배포 준비 추가"
 ```
 
 ### Task 6: 출시 문서와 최종 검증
@@ -275,7 +274,7 @@ git commit -m "GitHub Pages 자동 배포 구성"
 
 - [ ] **Step 1: README를 완성한다**
 
-README에 프로젝트 목적, 세 게임 규칙 요약, `npm install`, `npm run dev`, `npm run verify`, production build, GitHub Pages 활성화 방법, PWA 홈 화면 추가 방법과 제3자 라이선스 링크를 작성한다.
+README에 프로젝트 목적, 세 게임 규칙 요약, `npm install`, `npm run dev`, `npm run verify`, production build, 사용자의 Vercel 직접 연결 방법, PWA 홈 화면 추가 방법과 제3자 라이선스 링크를 작성한다. 실제 배포는 사용자가 Vercel에서 직접 수행한다.
 
 - [ ] **Step 2: 전체 자동 검증을 실행한다**
 
