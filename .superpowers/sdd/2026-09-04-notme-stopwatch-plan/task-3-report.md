@@ -49,3 +49,26 @@
 
 - 현재 세션에 사용 가능한 브라우저가 없어 320px·데스크톱 실제 스크린샷 검토는 하지 못했다. DOM과 CSS 수치로 가로 넘침·44 자체 검토했다.
 - draft 초기 복구·상태 자동 저장·visibility 무효화·`GameShell` 초기화 시 draft 삭제는 preflight 결정대로 Task 4에 남겼다. Task 3에서는 `다시 하기`에만 `clearDraft('stopwatch')`를 연결했다.
+
+## Fix round 1: 긴 참가자 이름 넘침 방지
+
+### RED/GREEN
+
+- RED: 공백 없는 80자 이름을 플레이 제목에 렌더링하고, 플레이 제목·재대결 이름·결과 선택자·결과 점수 행이 공통 `stopwatch-name-wrap` 보호 계약을 갖는지 검증했다. `npm test -- src/features/stopwatch/StopwatchPage.test.tsx`에서 해당 클래스가 없어 3개 테스트가 실패했다.
+- GREEN: 이름이 표시되는 모든 영역에 공통 보호 클래스를 적용하고 `overflow-wrap: anywhere`, `min-width: 0`을 설정한 뒤 화면 테스트 11개가 모두 통과했다.
+- 입력 행은 기존 `minmax(0, 1fr)` 그리드와 필드의 `min-width: 0`을 유지하고, 입력에도 `min-width: 0`, `max-width: 100%`를 추가해 320px 행 너비 안에서 줄어들도록 했다.
+
+### 명령 결과
+
+- `npm test -- src/features/stopwatch`: 3개 테스트 파일, 30개 테스트 통과
+- `npm test`: 8개 테스트 파일, 63개 테스트 통과
+- `npm run typecheck`: 통과
+- `npm run build`: 통과, Vite/PWA 생성 완료
+- `git diff --check`: 통과
+
+### 변경 및 자체 리뷰
+
+- `src/features/stopwatch/StopwatchPage.tsx`: 플레이 제목, 재대결 이름, 결과 선택자와 점수 행에 공통 줄바꿈 클래스를 적용했다.
+- `src/features/stopwatch/stopwatch.css`: 보호 클래스와 입력 축소 제약을 추가했다.
+- `src/features/stopwatch/StopwatchPage.test.tsx`: 긴 이름 회귀 테스트와 결과·재대결 표시 계약 검증을 추가했다.
+- 반복 동점 E2E는 리뷰 ledger의 Minor deferred 항목으로 유지했다.

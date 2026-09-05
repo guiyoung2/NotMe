@@ -64,6 +64,19 @@ describe('StopwatchPage', () => {
     expect(screen.getByRole('heading', { name: '짱구 차례예요' })).toBeInTheDocument();
   });
 
+  it('공백 없는 긴 이름에 컨테이너 내 줄바꿈 계약을 적용한다', async () => {
+    const user = userEvent.setup();
+    const longName = '가'.repeat(80);
+    render(<MemoryRouter><StopwatchPage /></MemoryRouter>);
+
+    await user.type(screen.getByLabelText('참가자 1'), longName);
+    await user.type(screen.getByLabelText('참가자 2'), '철수');
+    await user.click(screen.getByRole('button', { name: '게임 시작' }));
+
+    const heading = screen.getByRole('heading', { name: `${longName} 차례예요` });
+    expect(heading).toHaveClass('stopwatch-name-wrap');
+  });
+
   it('이름을 입력하면 홈 이동 전에 종료 확인을 한다', async () => {
     const user = userEvent.setup();
     render(<MemoryRouter initialEntries={['/stopwatch']}><StopwatchPage /></MemoryRouter>);
@@ -138,10 +151,10 @@ describe('StopwatchPage', () => {
     await saveDigit(user, clock, 3);
     await saveDigit(user, clock, 4);
 
-    expect(screen.getByRole('heading', { name: '짱구 님이 선택됐어요' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '짱구 님이 선택됐어요' })).toHaveClass('stopwatch-name-wrap');
     const scoreList = screen.getByRole('list', { name: '전체 점수' });
-    expect(within(scoreList).getByText('짱구 1 × 2 = 2')).toBeInTheDocument();
-    expect(within(scoreList).getByText('철수 3 × 4 = 12')).toBeInTheDocument();
+    expect(within(scoreList).getByText('짱구 1 × 2 = 2')).toHaveClass('stopwatch-name-wrap');
+    expect(within(scoreList).getByText('철수 3 × 4 = 12')).toHaveClass('stopwatch-name-wrap');
   });
 
   it('재대결 라운드에서 동점자만 안내한다', async () => {
@@ -159,7 +172,7 @@ describe('StopwatchPage', () => {
     await saveDigit(user, clock, 2);
 
     expect(screen.getByText('최저 점수 동점 — 동점자만 다시 측정합니다')).toBeInTheDocument();
-    expect(screen.getByText('짱구, 철수')).toBeInTheDocument();
+    expect(screen.getByText('짱구, 철수')).toHaveClass('stopwatch-name-wrap');
     expect(screen.getByText('2라운드')).toBeInTheDocument();
   });
 

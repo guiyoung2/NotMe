@@ -2,7 +2,13 @@
 .stopwatch-play,
 .stopwatch-result {
   width: min(100%, 560px);
+  min-width: 0;
   margin: 0 auto;
+}
+
+.stopwatch-name-wrap {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .stopwatch-setup__intro h2,
@@ -37,6 +43,8 @@
 .stopwatch-player-row__field input {
   display: block;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   margin-top: 7px;
   border: 1px solid var(--color-border);
   border-radius: 8px;

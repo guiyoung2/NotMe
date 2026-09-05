@@ -114,11 +114,11 @@ export function StopwatchPage(): JSX.Element {
         <section className="stopwatch-result">
           <header className="stopwatch-result__selected">
             <p>선택된 사람</p>
-            <h2>{selectedPlayer.name} 님이 선택됐어요</h2>
+            <h2 className="stopwatch-name-wrap">{selectedPlayer.name} 님이 선택됐어요</h2>
           </header>
           <ul className="stopwatch-result__scores" aria-label="전체 점수">
             {game.players.map((player) => (
-              <li key={player.id}>
+              <li className="stopwatch-name-wrap" key={player.id}>
                 {player.name} {player.attempts[0]} × {player.attempts[1]} = {player.score}
               </li>
             ))}
@@ -129,12 +129,14 @@ export function StopwatchPage(): JSX.Element {
         <section className="stopwatch-play">
           <header className="stopwatch-play__header">
             <p>{game.round}라운드</p>
-            <h2>{currentPlayer.name} 차례예요</h2>
+            <h2 className="stopwatch-name-wrap">{currentPlayer.name} 차례예요</h2>
           </header>
           {game.round > 1 && (
             <aside className="stopwatch-rematch">
               <strong>최저 점수 동점 — 동점자만 다시 측정합니다</strong>
-              <p>{game.players.filter(({ id }) => game.roundPlayerIds.includes(id)).map(({ name }) => name).join(', ')}</p>
+              <p className="stopwatch-name-wrap">
+                {game.players.filter(({ id }) => game.roundPlayerIds.includes(id)).map(({ name }) => name).join(', ')}
+              </p>
             </aside>
           )}
           <p className="stopwatch-play__attempt">{currentPlayer.attempts.length === 0 ? '첫 번째' : '두 번째'} 측정</p>
