@@ -1,3 +1,17 @@
-export function App() {
-  return <h1>게임 선택</h1>;
+import type { JSX } from 'react';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { HomePage } from './HomePage';
+import { PlaceholderGamePage } from './PlaceholderGamePage';
+
+export function App(): JSX.Element {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/stopwatch" element={<PlaceholderGamePage title="스톱워치" />} />
+        <Route path="/ladder" element={<PlaceholderGamePage title="사다리 타기" />} />
+        <Route path="/marble" element={<PlaceholderGamePage title="마블 룰렛" />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
