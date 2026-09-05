@@ -1,0 +1,142 @@
+.stopwatch-setup,
+.stopwatch-play,
+.stopwatch-result {
+  width: min(100%, 560px);
+  margin: 0 auto;
+}
+
+.stopwatch-setup__intro h2,
+.stopwatch-play__header h2,
+.stopwatch-result__selected h2 {
+  margin-top: 0;
+  color: var(--color-text);
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  letter-spacing: -0.035em;
+}
+
+.stopwatch-setup__intro p,
+.stopwatch-play__header p,
+.stopwatch-result__selected p {
+  color: var(--color-muted);
+}
+
+.stopwatch-setup__intro p { margin-top: 8px; line-height: 1.5; }
+.stopwatch-setup__list { margin-top: 28px; border-top: 1px solid var(--color-border); }
+
+.stopwatch-player-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.stopwatch-player-row__field { min-width: 0; color: var(--color-muted); font-size: 0.875rem; }
+
+.stopwatch-player-row__field input {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.stopwatch-player-row__field input::placeholder { color: var(--color-muted); }
+.stopwatch-player-row__remove { color: var(--color-muted); }
+
+.stopwatch-setup button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.stopwatch-setup__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.stopwatch-play__header { text-align: left; }
+.stopwatch-play__header h2 { margin-top: 5px; }
+
+.stopwatch-rematch {
+  margin-top: 22px;
+  padding: 14px 0;
+  border-block: 1px solid var(--color-border);
+  line-height: 1.45;
+}
+
+.stopwatch-rematch strong { font-size: 0.9375rem; }
+.stopwatch-rematch p { margin-top: 5px; color: var(--color-accent); }
+
+.stopwatch-play__attempt {
+  margin-top: clamp(36px, 9vh, 68px);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.stopwatch-timer {
+  display: block;
+  margin-top: 8px;
+  overflow: hidden;
+  font-size: clamp(3.1rem, 15vw, 6rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.07em;
+  line-height: 1.05;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.stopwatch-play__control {
+  display: block;
+  width: min(100%, 360px);
+  min-height: 72px;
+  margin: clamp(28px, 7vh, 52px) auto 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.stopwatch-score {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 36px 0 0;
+  border-block: 1px solid var(--color-border);
+}
+
+.stopwatch-score div { padding: 14px 8px; text-align: center; }
+.stopwatch-score div + div { border-left: 1px solid var(--color-border); }
+.stopwatch-score dt { color: var(--color-muted); font-size: 0.75rem; line-height: 1.35; }
+.stopwatch-score dd { margin: 8px 0 0; font-size: 1.5rem; font-variant-numeric: tabular-nums; font-weight: 700; }
+
+.stopwatch-result__selected {
+  padding: 8px 0 28px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.stopwatch-result__selected h2 { margin-top: 8px; }
+
+.stopwatch-result__scores {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stopwatch-result__scores li {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-variant-numeric: tabular-nums;
+}
+
+.stopwatch-result__restart { width: 100%; margin-top: 24px; font-weight: 700; }
+
+@media (max-width: 380px) {
+  .stopwatch-setup__actions { grid-template-columns: 1fr; }
+  .stopwatch-timer { font-size: 3rem; }
+}

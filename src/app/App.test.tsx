@@ -70,4 +70,13 @@ describe('App', () => {
 
     expect(screen.queryByRole('button', { name: '새 버전 적용' })).not.toBeInTheDocument();
   });
+
+  it('스톱워치 경로에 게임 설정 화면을 렌더링한다', () => {
+    window.history.replaceState({}, '', '/stopwatch');
+
+    render(<App />);
+
+    expect(screen.getByLabelText('참가자 1')).toBeInTheDocument();
+    expect(screen.getByLabelText('참가자 2')).toBeInTheDocument();
+  });
 });
