@@ -25,6 +25,7 @@ describe('App', () => {
   it.each([
     ['/', '게임 선택'],
     ['/stopwatch', '스톱워치'],
+    ['/ladder', '사다리 타기'],
     ['/marble', '마블 룰렛'],
   ])('%s 루트 배포 경로를 렌더링한다', (pathname, heading) => {
     window.history.replaceState({}, '', pathname);
