@@ -1,6 +1,21 @@
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+
+const { useRegisterSW } = vi.hoisted(() => ({
+  useRegisterSW: vi.fn(),
+}));
+
+vi.mock('virtual:pwa-register/react', () => ({ useRegisterSW }));
+
+beforeEach(() => {
+  useRegisterSW.mockReset();
+  useRegisterSW.mockReturnValue({
+    needRefresh: [false, vi.fn()],
+    offlineReady: [false, vi.fn()],
+    updateServiceWorker: vi.fn(),
+  });
+});
 
 afterEach(() => {
   cleanup();
@@ -33,5 +48,26 @@ describe('App', () => {
     render(<App />);
 
     expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
+  });
+
+  it.each(['/stopwatch', '/ladder', '/marble'])('%s 직접 경로에서도 서비스 워커를 등록한다', (pathname) => {
+    window.history.replaceState({}, '', pathname);
+
+    render(<App />);
+
+    expect(useRegisterSW).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['/stopwatch', '/ladder', '/marble'])('%s에서는 업데이트 버튼을 표시하지 않는다', (pathname) => {
+    useRegisterSW.mockReturnValue({
+      needRefresh: [true, vi.fn()],
+      offlineReady: [false, vi.fn()],
+      updateServiceWorker: vi.fn(),
+    });
+    window.history.replaceState({}, '', pathname);
+
+    render(<App />);
+
+    expect(screen.queryByRole('button', { name: '새 버전 적용' })).not.toBeInTheDocument();
   });
 });
