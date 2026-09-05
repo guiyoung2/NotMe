@@ -5,7 +5,7 @@ import { PlaceholderGamePage } from './PlaceholderGamePage';
 
 export function App(): JSX.Element {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/stopwatch" element={<PlaceholderGamePage title="스톱워치" />} />
