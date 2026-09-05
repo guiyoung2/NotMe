@@ -1,5 +1,6 @@
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
+import { ReloadPrompt } from './ReloadPrompt';
 
 const games = [
   { to: '/stopwatch', title: '스톱워치', description: '두 숫자의 곱으로 결정' },
@@ -26,6 +27,7 @@ export function HomePage(): JSX.Element {
             </li>
           ))}
         </ul>
+        <ReloadPrompt />
       </div>
     </main>
   );
