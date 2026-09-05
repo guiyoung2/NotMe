@@ -9,17 +9,24 @@ const games = [
 
 export function HomePage(): JSX.Element {
   return (
-    <main>
-      <h1>NOT ME</h1>
-      <h2>게임 선택</h2>
-      <ul>
-        {games.map((game) => (
-          <li key={game.to}>
-            <Link to={game.to}>{game.title}</Link>
-            <p>{game.description}</p>
-          </li>
-        ))}
-      </ul>
+    <main className="app">
+      <div className="app__content home-page">
+        <h1>NOT ME</h1>
+        <h2>게임 선택</h2>
+        <ul className="game-list">
+          {games.map((game, index) => (
+            <li key={game.to}>
+              <Link className="game-list__link" to={game.to}>
+                <span className="game-list__icon" aria-hidden="true">{['×', '⌁', '●'][index]}</span>
+                <span>
+                  <strong>{game.title}</strong>
+                  <span>{game.description}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </main>
   );
 }

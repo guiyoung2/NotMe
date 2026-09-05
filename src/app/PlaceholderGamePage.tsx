@@ -1,4 +1,5 @@
 import type { JSX } from 'react';
+import { GameShell } from './GameShell';
 
 type PlaceholderGamePageProps = {
   title: string;
@@ -6,8 +7,8 @@ type PlaceholderGamePageProps = {
 
 export function PlaceholderGamePage({ title }: PlaceholderGamePageProps): JSX.Element {
   return (
-    <main>
-      <h1>{title}</h1>
-    </main>
+    <GameShell title={title} dirty={false} onReset={() => {}}>
+      <p className="placeholder-game">게임을 준비하고 있어요.</p>
+    </GameShell>
   );
 }
