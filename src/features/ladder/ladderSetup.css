@@ -1,0 +1,125 @@
+.ladder-setup {
+  width: min(100%, 620px);
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.ladder-setup__intro h2 {
+  margin-top: 0;
+  color: var(--color-text);
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  letter-spacing: -0.035em;
+}
+
+.ladder-setup__intro p {
+  margin-top: 8px;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.ladder-setup__count {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.ladder-setup__count button:last-child { justify-self: stretch; }
+
+.ladder-setup__count-value {
+  min-width: 52px;
+  color: var(--color-accent);
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: center;
+}
+
+.ladder-setup__list {
+  margin: 24px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.ladder-setup-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ladder-setup-row__number {
+  padding-bottom: 13px;
+  color: var(--color-accent);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.ladder-setup-row__field {
+  min-width: 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.ladder-setup-row__field input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.ladder-setup-row__field input::placeholder { color: var(--color-muted); }
+
+.ladder-setup__preset {
+  width: 100%;
+  margin-top: 20px;
+  color: var(--color-accent);
+}
+
+.ladder-setup__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ladder-setup button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+@media (max-width: 480px) {
+  .ladder-setup-row {
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px 8px;
+  }
+
+  .ladder-setup-row__number {
+    grid-row: 1 / span 2;
+    padding-top: 33px;
+    padding-bottom: 0;
+  }
+
+  .ladder-setup-row__field { grid-column: 2; }
+}
+
+@media (max-width: 380px) {
+  .ladder-setup__count { gap: 6px; }
+  .ladder-setup__count button { padding-inline: 10px; }
+  .ladder-setup__actions { grid-template-columns: 1fr; }
+}
