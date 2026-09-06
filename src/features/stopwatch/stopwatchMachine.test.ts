@@ -4,7 +4,16 @@ import {
   createStopwatchGame,
   isStopwatchDraft,
   stopwatchReducer,
+  type StopwatchState,
 } from './stopwatchMachine';
+
+function recordDigits(state: StopwatchState, digits: number[]): StopwatchState {
+  return digits.reduce((current, digit, index) => {
+    const startedAt = index * 100;
+    const running = stopwatchReducer(current, { type: 'start', now: startedAt });
+    return stopwatchReducer(running, { type: 'stop', now: startedAt + digit * 10 });
+  }, state);
+}
 
 describe('stopwatchReducer', () => {
   it('두 번 측정하면 다음 참가자로 이동한다', () => {
@@ -47,6 +56,23 @@ describe('stopwatchReducer', () => {
     expect(state.currentPlayerIndex).toBe(0);
   });
 
+  it('1라운드 동점자 재대결에서 단독 최저점이 나오면 result로 전이한다', () => {
+    let state = createStopwatchGame(['짱구', '철수', '유리']);
+    const [jjanggu, cheolsu] = state.players.map(({ id }) => id);
+
+    state = recordDigits(state, [1, 1, 1, 1, 3, 4]);
+    expect(state.roundPlayerIds).toEqual([jjanggu, cheolsu]);
+    expect(state.round).toBe(2);
+
+    state = recordDigits(state, [3, 4, 4, 5]);
+
+    expect(state.phase).toBe('result');
+    expect(state.roundPlayerIds).toEqual([jjanggu, cheolsu]);
+    expect(state.players.find(({ id }) => id === jjanggu)?.score).toBe(12);
+    expect(state.players.find(({ id }) => id === cheolsu)?.score).toBe(20);
+    expect(isStopwatchDraft(state)).toBe(true);
+  });
+
   it('진행 중 측정을 무효화하면 시작 시각만 제거한다', () => {
     let state = createStopwatchGame(['짱구']);
     state = stopwatchReducer(state, { type: 'start', now: 1000 });
@@ -85,6 +111,27 @@ describe('isStopwatchDraft', () => {
     expect(isStopwatchDraft(playing)).toBe(true);
     expect(isStopwatchDraft(result)).toBe(true);
     expect(isStopwatchDraft(draw)).toBe(true);
+  });
+
+  it('실행 중 startedAt이 저장된 draft를 거부한다', () => {
+    const state = createStopwatchGame(['짱구', '철수']);
+
+    expect(isStopwatchDraft({ ...state, startedAt: 1234 })).toBe(false);
+  });
+
+  it('현재 라운드의 최저점이 동점인 result draft를 거부한다', () => {
+    const state = createStopwatchGame(['짱구', '철수']);
+    const tiedResult = {
+      ...state,
+      phase: 'result' as const,
+      players: [
+        { ...state.players[0], attempts: [1, 2], score: 2 },
+        { ...state.players[1], attempts: [1, 2], score: 2 },
+      ],
+      currentPlayerIndex: 1,
+    };
+
+    expect(isStopwatchDraft(tiedResult)).toBe(false);
   });
 
   it.each([

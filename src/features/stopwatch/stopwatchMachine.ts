@@ -115,7 +115,7 @@ export function isStopwatchDraft(value: unknown): value is StopwatchState {
   }
 
   return value.phase === 'result'
-    ? value.startedAt === null && value.players.every(isFinishedPlayer)
+    ? value.players.every(isFinishedPlayer) && hasSingleLowestRoundPlayer(value)
     : isValidPlayingState(value);
 }
 
@@ -123,7 +123,7 @@ function isStopwatchStateShape(value: unknown): value is StopwatchState {
   return isRecord(value) && (value.phase === 'playing' || value.phase === 'result')
     && isPlayerRuns(value.players) && isStringArray(value.roundPlayerIds)
     && Number.isInteger(value.currentPlayerIndex)
-    && (typeof value.startedAt === 'number' && Number.isFinite(value.startedAt) || value.startedAt === null)
+    && value.startedAt === null
     && Number.isInteger(value.round);
 }
 
@@ -166,6 +166,14 @@ function hasRoundPlayerOrder(players: PlayerRun[], roundPlayerIds: string[]): bo
 
 function isFinishedPlayer(player: PlayerRun): boolean {
   return player.attempts.length === 2;
+}
+
+function hasSingleLowestRoundPlayer(state: StopwatchState): boolean {
+  const roundScores = state.players
+    .filter(({ id }) => state.roundPlayerIds.includes(id))
+    .map(({ id, score }) => ({ id, score: score ?? 0 }));
+
+  return lowestPlayerIds(roundScores).length === 1;
 }
 
 function isValidPlayingState(state: StopwatchState): boolean {

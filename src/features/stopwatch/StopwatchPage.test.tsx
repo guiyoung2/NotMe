@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -149,7 +150,7 @@ describe('StopwatchPage', () => {
     expect(screen.getByText('두 번째 측정')).toBeInTheDocument();
   });
 
-  it('초기 draft는 첫 렌더에서 한 번만 불러온다', async () => {
+  it('StrictMode 초기 렌더 후 상태 갱신이 draft를 다시 불러오지 않는다', async () => {
     const user = userEvent.setup();
     const draft: StopwatchState = {
       phase: 'playing',
@@ -164,11 +165,15 @@ describe('StopwatchPage', () => {
     };
     saveDraft('stopwatch', draft);
     const getItem = vi.spyOn(Storage.prototype, 'getItem');
+    const stopwatchLoadCount = () => getItem.mock.calls
+      .filter(([key]) => key === 'notme:draft:stopwatch').length;
 
-    render(<MemoryRouter><StopwatchPage /></MemoryRouter>);
+    render(<StrictMode><MemoryRouter><StopwatchPage /></MemoryRouter></StrictMode>);
+    const initialLoadCount = stopwatchLoadCount();
     await user.click(screen.getByRole('button', { name: '시작' }));
 
-    expect(getItem).toHaveBeenCalledTimes(1);
+    expect(initialLoadCount).toBeGreaterThanOrEqual(1);
+    expect(stopwatchLoadCount()).toBe(initialLoadCount);
   });
 
   it('손상된 draft를 삭제하고 빈 설정 화면을 보여 준다', () => {
@@ -278,6 +283,28 @@ describe('StopwatchPage', () => {
     expect(screen.getByText('최저 점수 동점 — 동점자만 다시 측정합니다')).toBeInTheDocument();
     expect(screen.getByText('짱구, 철수')).toHaveClass('stopwatch-name-wrap');
     expect(screen.getByText('2라운드')).toBeInTheDocument();
+  });
+
+  it('반복 동점 후 3라운드에서 단독 최저점 참가자를 선택한다', async () => {
+    const user = userEvent.setup();
+    const clock = { now: 1000 };
+    vi.spyOn(performance, 'now').mockImplementation(() => clock.now);
+    vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1);
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+    render(<MemoryRouter><StopwatchPage /></MemoryRouter>);
+    await startTwoPlayerGame(user);
+
+    for (const digit of [1, 2, 1, 2, 3, 4, 3, 4]) {
+      await saveDigit(user, clock, digit);
+    }
+
+    expect(screen.getByText('3라운드')).toBeInTheDocument();
+
+    for (const digit of [1, 1, 2, 2]) {
+      await saveDigit(user, clock, digit);
+    }
+
+    expect(screen.getByRole('heading', { name: '짱구 님이 선택됐어요' })).toBeInTheDocument();
   });
 
   it('다시 하기는 스톱워치 draft를 지우고 설정으로 돌아간다', async () => {
