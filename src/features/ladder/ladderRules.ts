@@ -18,6 +18,10 @@ export type LadderTrace = {
 };
 
 export function generateLadder(columnCount: number, random: RandomSource): Ladder {
+  if (!Number.isInteger(columnCount) || columnCount < 2) {
+    throw new RangeError('columnCount must be an integer of at least 2');
+  }
+
   const rowCount = Math.max(6, columnCount * 2);
   const rows = Array.from({ length: rowCount }, () => {
     const links: number[] = [];
