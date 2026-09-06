@@ -2,7 +2,7 @@
 
 ## 디자인 계획
 
-- 색상은 기존 웜 다크 토큰 `#3b302a` 기본선과 `#ffb55e` 활성 경로만 사용한다.
+- 색상은 웜 다크 배경 위에 `#786b62` 중성 기본선과 `#ffb55e` 활성 경로를 사용한다.
 - 참가자와 결과를 72px 열에 맞추고, 이름·결과 버튼은 64px 너비에서 긴 문자열을 줄바꿈하며 최소 44px 높이를 갖는다.
 - 사다리는 행당 44px로 수직 진행하고, 선택한 경로 polyline만 dash 애니메이션으로 공개한다.
 - 보드 너비가 화면을 넘으면 `.ladder-board__scroll`만 가로로 이동하며, 외부 section은 `width: 100%`, `min-width: 0`으로 페이지 넘침을 막는다.
@@ -25,12 +25,18 @@
 - 첫 GREEN 시도에서 클릭 index·고정 polyline·공개 결과 3개 계약은 통과했고, 접근 가능한 SVG 이름과 CSS 자산 로딩 2개가 실패했다.
 - GREEN: SVG의 `aria-labelledby`와 `aria-describedby`를 분리하고 CSS 계약을 실제 파일에서 읽도록 수정한 뒤, 관련 테스트 5개와 typecheck가 통과했다.
 
+## Fix round 1 RED/GREEN
+
+- 리뷰 원인: 구조 이해에 필요한 기본 사다리 선이 장식용 `--color-border: #3b302a`를 재사용해 실제 보드 배경 `#1b1715`와의 대비가 약 1.392:1에 그쳤다.
+- RED: CSS에서 기본선 stroke와 보드 뒤 배경을 해석하고 WCAG 상대휘도 공식으로 대비를 계산하는 테스트를 추가했다. `npm test -- src/features/ladder/LadderBoard.test.tsx`는 `1.3916868894978076`이 3 미만이어서 실패했다.
+- GREEN: 기본선에만 보드 전용 웜 뉴트럴 `#786b62`를 적용해 대비를 약 3.456:1로 높였다. 활성 경로 `#ffb55e`는 변경하지 않았으며, 관련 테스트 6개가 통과했다.
+
 ## 검증 명령 결과
 
 | 명령 | 결과 |
 | --- | --- |
-| `npm test -- src/features/ladder/LadderBoard.test.tsx` | 1개 파일, 5개 테스트 통과 |
-| `npm test` | 11개 파일, 93개 테스트 통과 |
+| `npm test -- src/features/ladder/LadderBoard.test.tsx` | 1개 파일, 6개 테스트 통과 |
+| `npm test` | 11개 파일, 94개 테스트 통과 |
 | `npm run typecheck` | 통과 |
 | `npm run build` | 통과 |
 | `git diff --check` | 통과 |
@@ -49,6 +55,7 @@
 - `revealedStarts`를 각 도착 열의 시작 index와 대조하여 공개된 문자열만 DOM과 접근성 이름에 포함한다.
 - 활성 경로와 결과는 동일 props 렌더에서 나타나며, `onAnimationEnd` 또는 내부 결과 상태가 없다.
 - `prefers-reduced-motion: reduce`에서 animation을 제거하고 `stroke-dashoffset: 0`으로 즉시 표시한다.
+- 기본선은 실제 보드 뒤 배경과 3:1 이상 대비를 계산하는 테스트로 회귀를 막고, 활성 경로는 기존 accent 색을 유지한다.
 
 ## 우려
 
