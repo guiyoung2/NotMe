@@ -2,8 +2,13 @@ import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
 
 import { GameShell } from '../../app/GameShell';
-import { clearDraft } from '../../shared/draftStorage';
-import { createStopwatchGame, stopwatchReducer, type StopwatchState } from './stopwatchMachine';
+import { clearDraft, loadDraft, saveDraft } from '../../shared/draftStorage';
+import {
+  createStopwatchGame,
+  isStopwatchDraft,
+  stopwatchReducer,
+  type StopwatchState,
+} from './stopwatchMachine';
 import { lowestPlayerIds } from './stopwatchRules';
 import './stopwatch.css';
 
@@ -19,9 +24,15 @@ function formatElapsed(elapsedMs: number): string {
 
 export function StopwatchPage(): JSX.Element {
   const [names, setNames] = useState(initialNames);
-  const [game, setGame] = useState<StopwatchState | null>(null);
+  const [game, setGame] = useState<StopwatchState | null>(() => loadDraft('stopwatch', isStopwatchDraft));
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [wasAttemptInvalidated, setWasAttemptInvalidated] = useState(false);
   const startedAt = game?.startedAt ?? null;
+
+  useEffect(() => {
+    if (game === null) return;
+    saveDraft('stopwatch', { ...game, startedAt: null });
+  }, [game]);
 
   useEffect(() => {
     if (startedAt === null) return;
@@ -36,10 +47,27 @@ export function StopwatchPage(): JSX.Element {
     return () => cancelAnimationFrame(frameId);
   }, [startedAt]);
 
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'hidden' || startedAt === null) return;
+
+      setGame((current) => (
+        current ? stopwatchReducer(current, { type: 'invalidate-running-attempt' }) : current
+      ));
+      setElapsedMs(0);
+      setWasAttemptInvalidated(true);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [startedAt]);
+
   function reset() {
+    clearDraft('stopwatch');
     setNames(initialNames());
     setGame(null);
     setElapsedMs(0);
+    setWasAttemptInvalidated(false);
   }
 
   function startGame(event: FormEvent<HTMLFormElement>) {
@@ -50,6 +78,7 @@ export function StopwatchPage(): JSX.Element {
 
   function toggleTimer() {
     const now = performance.now();
+    setWasAttemptInvalidated(false);
     setGame((current) => (
       current
         ? stopwatchReducer(current, { type: current.startedAt === null ? 'start' : 'stop', now })
@@ -59,7 +88,6 @@ export function StopwatchPage(): JSX.Element {
   }
 
   function restart() {
-    clearDraft('stopwatch');
     reset();
   }
 
@@ -140,6 +168,7 @@ export function StopwatchPage(): JSX.Element {
             </aside>
           )}
           <p className="stopwatch-play__attempt">{currentPlayer.attempts.length === 0 ? '첫 번째' : '두 번째'} 측정</p>
+          {wasAttemptInvalidated && <p role="status">측정이 취소됐어요. 다시 시작해 주세요.</p>}
           <output className="stopwatch-timer" aria-label="경과 시간" aria-live="off">{formatElapsed(elapsedMs)}</output>
           <button className="button--accent stopwatch-play__control" type="button" onClick={toggleTimer}>
             {game.startedAt === null ? '시작' : '멈추기'}
