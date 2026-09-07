@@ -1,7 +1,7 @@
 /*!
  * Portions adapted from lazygyu/roulette.
  * Copyright (c) 2023 LazyGyu
- * @license MIT; see public/licenses/lazygyu-roulette-MIT.txt.
+ * @license MIT; Distributed at /licenses/lazygyu-roulette-MIT.txt.
  */
 
 import Box2DFactory from 'box2d-wasm';
