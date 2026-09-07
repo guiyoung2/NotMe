@@ -1,16 +1,19 @@
-/*
+/*!
  * Portions adapted from lazygyu/roulette.
  * Copyright (c) 2023 LazyGyu
- * Licensed under the MIT License; see LICENSES/lazygyu-roulette-MIT.txt.
+ * @license MIT; see public/licenses/lazygyu-roulette-MIT.txt.
  */
 
 import Box2DFactory from 'box2d-wasm';
+import standardWasmUrl from 'box2d-wasm/dist/es/Box2D.wasm?url';
+import simdWasmUrl from 'box2d-wasm/dist/es/Box2D.simd.wasm?url';
 
 import type {
   BodySnapshot,
   CourseDefinition,
   CourseObstacle,
   CoursePoint,
+  DynamicObstacleSnapshot,
   PhysicsAdapter,
 } from './types';
 
@@ -19,30 +22,73 @@ const MARBLE_DENSITY = 1;
 const MARBLE_RESTITUTION = 0.35;
 const IMPACT_RADIUS = 10;
 const IMPACT_IMPULSE = 2;
+const IMPACT_DIRECTION_EPSILON = 0.000001;
 
 type Box2DModule = typeof Box2D & EmscriptenModule;
 
 let box2dModulePromise: Promise<Box2DModule> | null = null;
 
+function getImpactDirection(sourceId: string, targetId: string): { x: number; y: number } {
+  let hash = 2166136261;
+  for (const character of `${sourceId}:${targetId}`) {
+    hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+  }
+
+  const angle = (hash >>> 0) / 4294967296 * Math.PI * 2;
+  return { x: Math.cos(angle), y: Math.sin(angle) };
+}
+
+function locateBox2dFile(fileName: string): string {
+  if (fileName === 'Box2D.wasm') return standardWasmUrl;
+  if (fileName === 'Box2D.simd.wasm') return simdWasmUrl;
+  return fileName;
+}
+
+function createBox2dModule(): Promise<Box2DModule> {
+  if (typeof window === 'undefined') return Box2DFactory();
+  return Box2DFactory({ locateFile: locateBox2dFile });
+}
+
 export class Box2dPhysics implements PhysicsAdapter {
   private box2d: Box2DModule | null = null;
   private world: Box2D.b2World | null = null;
+  private initPromise: Promise<void> | null = null;
+  private generation = 0;
   private readonly marbles = new Map<string, Box2D.b2Body>();
   private readonly courseBodies: Box2D.b2Body[] = [];
+  private readonly spinners = new Map<string, { body: Box2D.b2Body; length: number }>();
 
   async init(): Promise<void> {
     if (this.world) return;
+    if (this.initPromise) return this.initPromise;
 
-    box2dModulePromise ??= Box2DFactory().catch((error: unknown) => {
+    const generation = this.generation;
+    const initPromise = this.initializeWorld(generation);
+    this.initPromise = initPromise;
+    try {
+      await initPromise;
+    } finally {
+      if (this.initPromise === initPromise) this.initPromise = null;
+    }
+  }
+
+  private async initializeWorld(generation: number): Promise<void> {
+    box2dModulePromise ??= createBox2dModule().catch((error: unknown) => {
       box2dModulePromise = null;
       throw error;
     });
     const box2d = await box2dModulePromise;
     const gravity = new box2d.b2Vec2(0, 10);
+    const world = new box2d.b2World(gravity);
+
+    box2d.destroy(gravity);
+    if (generation !== this.generation) {
+      box2d.destroy(world);
+      return;
+    }
 
     this.box2d = box2d;
-    this.world = new box2d.b2World(gravity);
-    box2d.destroy(gravity);
+    this.world = world;
   }
 
   createCourse(course: CourseDefinition): void {
@@ -140,10 +186,15 @@ export class Box2dPhysics implements PhysicsAdapter {
           const deltaX = targetPosition.x - sourcePosition.x;
           const deltaY = targetPosition.y - sourcePosition.y;
           const distance = Math.hypot(deltaX, deltaY);
-          if (distance === 0 || distance > IMPACT_RADIUS) continue;
+          if (distance > IMPACT_RADIUS) continue;
 
-          const strength = (1 - distance / IMPACT_RADIUS) * IMPACT_IMPULSE;
-          const impulse = new box2d.b2Vec2(deltaX / distance * strength, deltaY / distance * strength);
+          const direction = distance <= IMPACT_DIRECTION_EPSILON
+            ? getImpactDirection(id, targetId)
+            : { x: deltaX / distance, y: deltaY / distance };
+          const strength = distance <= IMPACT_DIRECTION_EPSILON
+            ? IMPACT_IMPULSE
+            : (1 - distance / IMPACT_RADIUS) * IMPACT_IMPULSE;
+          const impulse = new box2d.b2Vec2(direction.x * strength, direction.y * strength);
           target.ApplyLinearImpulseToCenter(impulse, true);
           box2d.destroy(impulse);
         } finally {
@@ -155,7 +206,27 @@ export class Box2dPhysics implements PhysicsAdapter {
     }
   }
 
+  getDynamicObstacles(): DynamicObstacleSnapshot[] {
+    const { box2d } = this.requireWorld();
+    return [...this.spinners].map(([id, spinner]) => {
+      const center = spinner.body.GetPosition();
+      try {
+        return {
+          id,
+          kind: 'spinner',
+          center: { x: center.x, y: center.y },
+          length: spinner.length,
+          angle: spinner.body.GetAngle(),
+        };
+      } finally {
+        box2d.LeakMitigator.freeFromCache(center);
+      }
+    });
+  }
+
   destroy(): void {
+    this.generation += 1;
+    this.initPromise = null;
     if (!this.box2d || !this.world) return;
 
     for (const body of this.marbles.values()) this.destroyBody(body);
@@ -241,6 +312,7 @@ export class Box2dPhysics implements PhysicsAdapter {
     const fixture = body.CreateFixture(shape, 0);
     body.SetAngularVelocity(obstacle.angularVelocity);
     this.courseBodies.push(body);
+    this.spinners.set(obstacle.id, { body, length: obstacle.length });
 
     box2d.LeakMitigator.freeFromCache(fixture);
 
@@ -264,6 +336,7 @@ export class Box2dPhysics implements PhysicsAdapter {
   private clearCourse(): void {
     for (const body of this.courseBodies) this.destroyBody(body);
     this.courseBodies.length = 0;
+    this.spinners.clear();
   }
 
   private destroyBody(body: Box2D.b2Body): void {

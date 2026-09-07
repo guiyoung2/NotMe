@@ -26,6 +26,22 @@ function getBodyCount(physics: Box2dPhysics): number {
   return world.GetBodyCount();
 }
 
+function getVelocity(physics: Box2dPhysics, id: string): { x: number; y: number } {
+  const { box2d, marbles } = physics as unknown as {
+    box2d: { LeakMitigator: { freeFromCache(wrapper: unknown): void } };
+    marbles: Map<string, { GetLinearVelocity(): { x: number; y: number } }>;
+  };
+  const body = marbles.get(id);
+  if (!body) throw new Error(`구슬 ${id}를 찾을 수 없습니다.`);
+
+  const velocity = body.GetLinearVelocity();
+  try {
+    return { x: velocity.x, y: velocity.y };
+  } finally {
+    box2d.LeakMitigator.freeFromCache(velocity);
+  }
+}
+
 describe('Box2dPhysics', () => {
   let physics: Box2dPhysics;
 
@@ -76,6 +92,54 @@ describe('Box2dPhysics', () => {
     expect(getBodyCount(physics)).toBe(1);
   });
 
+  it('spinner의 현재 angle과 geometry를 renderer용 snapshot으로 제공한다', () => {
+    physics.createCourse({
+      ...testCourse,
+      sections: [
+        {
+          kind: 'spinner',
+          obstacles: [
+            {
+              kind: 'spinner',
+              id: 'spinner:main',
+              center: { x: 8, y: 6 },
+              length: 2,
+              angle: 0,
+              angularVelocity: 2,
+            },
+          ],
+        },
+      ],
+    });
+    const getDynamicObstacles = (physics as unknown as {
+      getDynamicObstacles(): Array<{
+        id: string;
+        center: { x: number; y: number };
+        length: number;
+        angle: number;
+      }>;
+    }).getDynamicObstacles.bind(physics);
+
+    expect(getDynamicObstacles()).toEqual([
+      {
+        id: 'spinner:main',
+        kind: 'spinner',
+        center: { x: 8, y: 6 },
+        length: 2,
+        angle: 0,
+      },
+    ]);
+
+    physics.step(0.5);
+
+    expect(getDynamicObstacles()[0]).toMatchObject({
+      id: 'spinner:main',
+      center: { x: 8, y: 6 },
+      length: 2,
+      angle: 1,
+    });
+  });
+
   it('선분과 원형 자애물을 물리 코스에 배치한다', () => {
     physics.createCourse({
       ...testCourse,
@@ -95,6 +159,7 @@ describe('Box2dPhysics', () => {
           obstacles: [
             {
               kind: 'spinner',
+              id: 'spinner:test',
               center: { x: 8, y: 6 },
               length: 2,
               angle: 0,
@@ -146,6 +211,24 @@ describe('Box2dPhysics', () => {
 
     expect(physics.getMarble('near')!.x).toBeGreaterThan(6);
     expect(physics.getMarble('far')!.x).toBeCloseTo(20, 5);
+  });
+
+  it('겹친 target에도 결정적인 최대 impact 방향을 적용한다', () => {
+    physics.createMarble({ id: 'source', x: 5, y: 1 });
+    physics.createMarble({ id: 'target', x: 5, y: 1 });
+
+    physics.impact('source');
+    const firstVelocity = getVelocity(physics, 'target');
+
+    expect(Math.hypot(firstVelocity.x, firstVelocity.y)).toBeGreaterThan(10);
+
+    physics.removeMarble('source');
+    physics.removeMarble('target');
+    physics.createMarble({ id: 'source', x: 5, y: 1 });
+    physics.createMarble({ id: 'target', x: 5, y: 1 });
+    physics.impact('source');
+
+    expect(getVelocity(physics, 'target')).toEqual(firstVelocity);
   });
 
   it('스냅샷마다 반환된 position wrapper를 cache에서 해제한다', () => {

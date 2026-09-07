@@ -17,6 +17,7 @@ export interface CircleObstacle {
 
 export interface SpinnerObstacle {
   kind: 'spinner';
+  id: string;
   center: CoursePoint;
   length: number;
   angle: number;
@@ -49,6 +50,14 @@ export interface BodySnapshot {
   radius: number;
 }
 
+export interface DynamicObstacleSnapshot {
+  id: string;
+  kind: 'spinner';
+  center: CoursePoint;
+  length: number;
+  angle: number;
+}
+
 export interface PhysicsAdapter {
   init(): Promise<void>;
   createCourse(course: CourseDefinition): void;
@@ -58,5 +67,6 @@ export interface PhysicsAdapter {
   removeMarble(id: string): void;
   shakeMarble(id: string): void;
   impact(id: string): void;
+  getDynamicObstacles(): DynamicObstacleSnapshot[];
   destroy(): void;
 }
