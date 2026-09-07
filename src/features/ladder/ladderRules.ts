@@ -17,13 +17,16 @@ export type LadderTrace = {
   points: LadderPoint[];
 };
 
+export function ladderRowCount(columnCount: number): number {
+  return Math.max(6, columnCount * 2);
+}
+
 export function generateLadder(columnCount: number, random: RandomSource): Ladder {
   if (!Number.isInteger(columnCount) || columnCount < 2) {
     throw new RangeError('columnCount must be an integer of at least 2');
   }
 
-  const rowCount = Math.max(6, columnCount * 2);
-  const rows = Array.from({ length: rowCount }, () => {
+  const rows = Array.from({ length: ladderRowCount(columnCount) }, () => {
     const links: number[] = [];
     for (let left = 0; left < columnCount - 1; left += 1) {
       if (links.at(-1) !== left - 1 && random() < 0.38) links.push(left);

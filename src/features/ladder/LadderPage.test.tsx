@@ -15,7 +15,7 @@ const playingDraft: LadderDraft = {
   phase: 'playing',
   names: ['짱구', '철수'],
   outcomes: ['통과', '벌칙'],
-  ladder: { columnCount: 2, rows: [[0], []] },
+  ladder: { columnCount: 2, rows: [[0], [], [], [], [], []] },
   revealedStarts: [0],
 };
 
@@ -67,15 +67,19 @@ describe('isLadderDraft', () => {
     ['setup에 사다리가 있음', { ...playingDraft, phase: 'setup', revealedStarts: [] }],
     ['setup에 공개 결과가 있음', { ...playingDraft, phase: 'setup', ladder: null }],
     ['playing에 사다리가 없음', { ...playingDraft, ladder: null }],
-    ['사다리 열 수가 참가자 수와 다름', { ...playingDraft, ladder: { columnCount: 3, rows: [] } }],
-    ['사다리 열 수가 정수가 아님', { ...playingDraft, ladder: { columnCount: 2.5, rows: [] } }],
-    ['row가 배열이 아님', { ...playingDraft, ladder: { columnCount: 2, rows: [0] } }],
-    ['link가 정수가 아님', { ...playingDraft, ladder: { columnCount: 2, rows: [[0.5]] } }],
-    ['link가 열 범위를 벗어남', { ...playingDraft, ladder: { columnCount: 2, rows: [[1]] } }],
-    ['한 row의 link가 서로 인접함', { ...playingDraft, names: ['짱구', '철수', '유리'], outcomes: ['통과', '벌칙', '꽝'], ladder: { columnCount: 3, rows: [[0, 1]] } }],
+    ['사다리 열 수가 참가자 수와 다름', { ...playingDraft, ladder: { columnCount: 3, rows: [[], [], [], [], [], []] } }],
+    ['사다리 열 수가 정수가 아님', { ...playingDraft, ladder: { columnCount: 2.5, rows: [[], [], [], [], [], []] } }],
+    ['row가 비어 있음', { ...playingDraft, ladder: { columnCount: 2, rows: [] } }],
+    ['row가 하나 부족함', { ...playingDraft, ladder: { columnCount: 2, rows: [[], [], [], [], []] } }],
+    ['row가 하나 초과함', { ...playingDraft, ladder: { columnCount: 2, rows: [[], [], [], [], [], [], []] } }],
+    ['row가 배열이 아님', { ...playingDraft, ladder: { columnCount: 2, rows: [0, [], [], [], [], []] } }],
+    ['link가 정수가 아님', { ...playingDraft, ladder: { columnCount: 2, rows: [[0.5], [], [], [], [], []] } }],
+    ['link가 열 범위를 벗어남', { ...playingDraft, ladder: { columnCount: 2, rows: [[1], [], [], [], [], []] } }],
+    ['한 row의 link가 서로 인접함', { ...playingDraft, names: ['짱구', '철수', '유리'], outcomes: ['통과', '벌칙', '꽝'], ladder: { columnCount: 3, rows: [[0, 1], [], [], [], [], []] } }],
     ['공개 index가 중복됨', { ...playingDraft, revealedStarts: [0, 0] }],
     ['공개 index가 범위를 벗어남', { ...playingDraft, revealedStarts: [2] }],
     ['공개 index가 정수가 아님', { ...playingDraft, revealedStarts: [0.5] }],
+    ['계획에 없는 최상위 필드가 있음', { ...playingDraft, activeStart: 0 }],
   ])('%s draft를 거부한다', (_description, draft) => {
     expect(isLadderDraft(draft)).toBe(false);
   });
@@ -165,13 +169,22 @@ describe('LadderPage', () => {
       ...playingDraft,
       names: ['짱구', '철수', '유리'],
       outcomes: ['통과', '벌칙', '꽝'],
-      ladder: { columnCount: 3, rows: [[0, 1]] },
+      ladder: { columnCount: 3, rows: [[0, 1], [], [], [], [], []] },
     });
 
     renderPage();
 
     expect(screen.getByLabelText('참가자 1')).toHaveValue('');
     expect(screen.getByLabelText('참가자 2')).toHaveValue('');
+    expect(localStorage.getItem('notme:draft:ladder')).toBeNull();
+  });
+
+  it('activeStart가 저장된 draft를 삭제하고 다시 영속화하지 않는다', () => {
+    saveDraft('ladder', { ...playingDraft, activeStart: 0 });
+
+    renderPage();
+
+    expect(screen.getByLabelText('참가자 1')).toHaveValue('');
     expect(localStorage.getItem('notme:draft:ladder')).toBeNull();
   });
 

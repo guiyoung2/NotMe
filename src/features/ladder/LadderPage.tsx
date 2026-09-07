@@ -5,7 +5,7 @@ import { GameShell } from '../../app/GameShell';
 import { clearDraft, loadDraft, saveDraft } from '../../shared/draftStorage';
 import { LadderBoard } from './LadderBoard';
 import { LadderSetup, type LadderSetupValue } from './LadderSetup';
-import { generateLadder, type Ladder } from './ladderRules';
+import { generateLadder, ladderRowCount, type Ladder } from './ladderRules';
 
 export type LadderDraft = {
   phase: 'setup' | 'playing';
@@ -14,6 +14,14 @@ export type LadderDraft = {
   ladder: Ladder | null;
   revealedStarts: number[];
 };
+
+const LADDER_DRAFT_KEYS = new Set([
+  'phase',
+  'names',
+  'outcomes',
+  'ladder',
+  'revealedStarts',
+]);
 
 function createInitialDraft(): LadderDraft {
   return {
@@ -38,7 +46,7 @@ function isValidLadder(value: unknown, columnCount: number): value is Ladder {
     return false;
   }
 
-  if (!Array.isArray(value.rows)) return false;
+  if (!Array.isArray(value.rows) || value.rows.length !== ladderRowCount(columnCount)) return false;
 
   return value.rows.every((row) => {
     if (!Array.isArray(row)) return false;
@@ -61,7 +69,14 @@ function isValidRevealedStarts(value: unknown, columnCount: number): value is nu
 }
 
 export function isLadderDraft(value: unknown): value is LadderDraft {
-  if (!isRecord(value) || !isStringArray(value.names) || !isStringArray(value.outcomes)) {
+  if (!isRecord(value)) return false;
+
+  const keys = Object.keys(value);
+  if (keys.length !== LADDER_DRAFT_KEYS.size || keys.some((key) => !LADDER_DRAFT_KEYS.has(key))) {
+    return false;
+  }
+
+  if (!isStringArray(value.names) || !isStringArray(value.outcomes)) {
     return false;
   }
 
