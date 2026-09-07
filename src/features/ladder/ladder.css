@@ -1,3 +1,37 @@
+.ladder-page {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ladder-play {
+  width: 100%;
+  min-width: 0;
+}
+
+.ladder-play__intro {
+  margin-bottom: 24px;
+}
+
+.ladder-play__intro h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(1.35rem, 6vw, 1.75rem);
+  letter-spacing: -0.035em;
+}
+
+.ladder-play__intro p {
+  margin-top: 8px;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.ladder-play__reveal-all {
+  width: 100%;
+  margin-top: 24px;
+  margin-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
 .ladder-board {
   --color-ladder-line: #786b62;
   width: 100%;

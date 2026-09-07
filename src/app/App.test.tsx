@@ -1,4 +1,5 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 
@@ -19,6 +20,8 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  localStorage.clear();
+  vi.restoreAllMocks();
   window.history.replaceState({}, '', '/');
 });
 
@@ -78,5 +81,31 @@ describe('App', () => {
 
     expect(screen.getByLabelText('참가자 1')).toBeInTheDocument();
     expect(screen.getByLabelText('참가자 2')).toBeInTheDocument();
+  });
+
+  it('/ladder에서 설정, 개별 공개, 전체 공개, 초기화 흐름을 실행한다', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    window.history.replaceState({}, '', '/ladder');
+    render(<App />);
+
+    await user.type(screen.getByLabelText('참가자 1'), '짱구');
+    await user.type(screen.getByLabelText('참가자 2'), '철수');
+    await user.type(screen.getByLabelText('결과 1'), '통과');
+    await user.type(screen.getByLabelText('결과 2'), '벌칙');
+    await user.click(screen.getByRole('button', { name: '게임 시작' }));
+    await user.click(screen.getByRole('button', { name: '짱구 경로 보기' }));
+
+    expect(screen.getByText('통과')).toBeInTheDocument();
+    expect(screen.queryByText('벌칙')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '전체 결과 보기' }));
+    expect(screen.getByText('벌칙')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '초기화' }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '초기화' }));
+
+    expect(localStorage.getItem('notme:draft:ladder')).toBeNull();
+    expect(screen.getByLabelText('참가자 1')).toHaveValue('');
   });
 });
