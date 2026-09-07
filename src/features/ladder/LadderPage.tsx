@@ -5,7 +5,7 @@ import { GameShell } from '../../app/GameShell';
 import { clearDraft, loadDraft, saveDraft } from '../../shared/draftStorage';
 import { LadderBoard } from './LadderBoard';
 import { LadderSetup, type LadderSetupValue } from './LadderSetup';
-import { generateLadder, ladderRowCount, type Ladder } from './ladderRules';
+import { generateLadder, ladderRowCount, traceLadder, type Ladder } from './ladderRules';
 
 export type LadderDraft = {
   phase: 'setup' | 'playing';
@@ -99,6 +99,7 @@ export function LadderPage(): JSX.Element {
     loadDraft('ladder', isLadderDraft) ?? createInitialDraft()
   ));
   const [activeStart, setActiveStart] = useState<number | null>(null);
+  const [announcement, setAnnouncement] = useState('');
   const dirty = draft.phase === 'playing'
     || draft.names.some((name) => name.length > 0)
     || draft.outcomes.some((outcome) => outcome.length > 0);
@@ -112,6 +113,7 @@ export function LadderPage(): JSX.Element {
     clearDraft('ladder');
     setDraft(createInitialDraft());
     setActiveStart(null);
+    setAnnouncement('');
   }
 
   function updateSetup(value: LadderSetupValue) {
@@ -143,12 +145,14 @@ export function LadderPage(): JSX.Element {
       revealedStarts: [],
     };
     setActiveStart(null);
+    setAnnouncement('');
     persistDraft(nextDraft);
   }
 
   function revealStart(start: number) {
     if (
       draft.phase !== 'playing'
+      || !draft.ladder
       || !Number.isInteger(start)
       || start < 0
       || start >= draft.names.length
@@ -157,6 +161,8 @@ export function LadderPage(): JSX.Element {
     }
 
     setActiveStart(start);
+    const end = traceLadder(draft.ladder, start).end;
+    setAnnouncement(`${draft.names[start]}: ${draft.outcomes[end]}`);
     if (draft.revealedStarts.includes(start)) return;
 
     persistDraft({
@@ -166,7 +172,13 @@ export function LadderPage(): JSX.Element {
   }
 
   function revealAll() {
-    if (draft.phase !== 'playing') return;
+    if (draft.phase !== 'playing' || !draft.ladder) return;
+    const ladder = draft.ladder;
+    const results = draft.names.map((name, start) => {
+      const end = traceLadder(ladder, start).end;
+      return `${name}: ${draft.outcomes[end]}`;
+    });
+    setAnnouncement(`전체 결과: ${results.join(', ')}`);
     persistDraft({
       ...draft,
       revealedStarts: Array.from({ length: draft.names.length }, (_, index) => index),
@@ -184,6 +196,7 @@ export function LadderPage(): JSX.Element {
               <h2>이름을 눌러 결과를 확인하세요</h2>
               <p>원하는 참가자부터 하나씩 경로를 따라갈 수 있어요.</p>
             </header>
+            <p className="ladder-play__status" role="status" aria-live="polite">{announcement}</p>
             <LadderBoard
               ladder={draft.ladder}
               names={draft.names}

@@ -155,6 +155,21 @@ describe('LadderPage', () => {
     expect(readStoredDraft()).not.toHaveProperty('activeStart');
   });
 
+  it('개별 공개와 전체 공개 결과를 polite status로 알린다', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    renderPage();
+    await fillSetup(user);
+    await user.click(screen.getByRole('button', { name: '게임 시작' }));
+
+    await user.click(screen.getByRole('button', { name: '짱구 경로 보기' }));
+    expect(screen.getByRole('status')).toHaveTextContent('짱구: 통과');
+    expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite');
+
+    await user.click(screen.getByRole('button', { name: '전체 결과 보기' }));
+    expect(screen.getByRole('status')).toHaveTextContent('전체 결과: 짱구: 통과, 철수: 벌칙');
+  });
+
   it('저장된 판과 공개 결과는 복구하지만 활성 애니메이션은 복구하지 않는다', () => {
     saveDraft('ladder', playingDraft);
 

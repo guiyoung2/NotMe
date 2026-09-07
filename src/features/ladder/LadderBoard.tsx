@@ -117,7 +117,7 @@ export function LadderBoard({
                   <button
                     className="ladder-board__endpoint ladder-board__result"
                     type="button"
-                    aria-label={isRevealed ? `${outcome} 경로 다시 보기` : `결과 ${end + 1} 경로 보기`}
+                    aria-label={isRevealed ? `${outcome} 경로 보기` : `결과 ${end + 1} 경로 보기`}
                     aria-pressed={activeStart === start}
                     onClick={() => onSelect(start)}
                   >

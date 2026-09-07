@@ -48,9 +48,10 @@ describe('GameShell', () => {
 
   it('진행 중이 아니면 즉시 홈으로 이동한다', async () => {
     const user = userEvent.setup();
-    renderShell();
+    const { onReset } = renderShell();
 
     await user.click(screen.getByRole('button', { name: '홈으로' }));
+    expect(onReset).toHaveBeenCalledTimes(1);
     expect(screen.getByText('/')).toBeInTheDocument();
   });
 

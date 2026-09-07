@@ -108,4 +108,26 @@ describe('App', () => {
     expect(localStorage.getItem('notme:draft:ladder')).toBeNull();
     expect(screen.getByLabelText('참가자 1')).toHaveValue('');
   });
+
+  it('빈 행을 추가한 사다리도 홈으로 이동하면 draft를 지우고 두 칸으로 재진입한다', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, '', '/ladder');
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '사다리 추가' }));
+    expect(screen.getByLabelText('참가자 3')).toHaveValue('');
+    expect(localStorage.getItem('notme:draft:ladder')).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '홈으로' }));
+    expect(screen.getByRole('heading', { name: '게임 선택' })).toBeInTheDocument();
+    expect(localStorage.getItem('notme:draft:ladder')).toBeNull();
+
+    await user.click(screen.getByRole('link', { name: /사다리 타기/ }));
+    expect(screen.getByLabelText('참가자 1')).toHaveValue('');
+    expect(screen.getByLabelText('참가자 2')).toHaveValue('');
+    expect(screen.getByLabelText('결과 1')).toHaveValue('');
+    expect(screen.getByLabelText('결과 2')).toHaveValue('');
+    expect(screen.queryByLabelText('참가자 3')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('결과 3')).not.toBeInTheDocument();
+  });
 });

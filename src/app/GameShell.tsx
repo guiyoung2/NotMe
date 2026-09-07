@@ -42,6 +42,7 @@ export function GameShell({ title, dirty, onReset, children }: GameShellProps): 
       return;
     }
 
+    onReset();
     navigate('/');
   }
 

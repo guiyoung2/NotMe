@@ -105,6 +105,23 @@ describe('LadderBoard', () => {
     expect(screen.queryByText('벌칙')).not.toBeInTheDocument();
   });
 
+  it('활성 참가자와 결과는 다시 재생을 약속하지 않고 선택 상태를 알린다', () => {
+    render(
+      <LadderBoard
+        ladder={ladder}
+        names={['짱구', '철수', '유리']}
+        outcomes={['통과', '벌칙', '꽝']}
+        revealedStarts={[0]}
+        activeStart={0}
+        onSelect={() => {}}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '짱구 경로 보기' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '꽝 경로 보기' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: /경로 다시 보기/ })).not.toBeInTheDocument();
+  });
+
   it('72×44 격자로 SVG 크기를 계산하고 접근 가능한 설명을 제공한다', () => {
     render(
       <LadderBoard
