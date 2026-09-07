@@ -107,6 +107,9 @@ export function validateCourse(course: CourseDefinition): string[] {
   if (course.goalSensor.from.y !== course.goalY || course.goalSensor.to.y !== course.goalY) {
     errors.push('골인 센서는 goalY에 있어야 합니다.');
   }
+  if (!isFullWidthGoalSensor(course)) {
+    errors.push('골인 센서는 goalY에서 코스 전폭을 가로질러야 합니다.');
+  }
 
   for (const wall of course.walls) validateLine(wall, course, errors);
   for (const section of course.sections) {
@@ -121,6 +124,18 @@ function hasFullHeightWall(walls: LineObstacle[], x: number, goalY: number): boo
     (from.x === x && from.y === 0 && to.x === x && to.y === goalY)
     || (to.x === x && to.y === 0 && from.x === x && from.y === goalY)
   ));
+}
+
+function isFullWidthGoalSensor(course: CourseDefinition): boolean {
+  const { from, to } = course.goalSensor;
+  return (
+    from.y === course.goalY
+    && to.y === course.goalY
+    && (
+      (from.x === 0 && to.x === course.width)
+      || (to.x === 0 && from.x === course.width)
+    )
+  );
 }
 
 function validateObstacle(obstacle: CourseObstacle, course: CourseDefinition, errors: string[]): void {
@@ -152,7 +167,11 @@ function validateObstacle(obstacle: CourseObstacle, course: CourseDefinition, er
 }
 
 function validateLine(line: Pick<LineObstacle, 'from' | 'to'>, course: CourseDefinition, errors: string[]): void {
-  if (!isPointInBounds(line.from, course) || !isPointInBounds(line.to, course)) {
+  if (
+    !isPointInBounds(line.from, course)
+    || !isPointInBounds(line.to, course)
+    || !(Math.hypot(line.to.x - line.from.x, line.to.y - line.from.y) > 0)
+  ) {
     errors.push('선분의 끝점은 코스 범위 안에 있어야 합니다.');
   }
 }

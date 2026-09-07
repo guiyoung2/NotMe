@@ -6,6 +6,9 @@ import { NOTME_COURSE, validateCourse } from './course';
 
 describe('NOTME_COURSE', () => {
   it('다섯 구간과 유효한 골인선을 가진다', () => {
+    expect(NOTME_COURSE.width).toBe(26);
+    expect(NOTME_COURSE.viewportHeight).toBe(24);
+    expect(NOTME_COURSE.goalY).toBe(120);
     expect(NOTME_COURSE.sections.map(({ kind }) => kind)).toEqual([
       'ramps',
       'pins',
@@ -48,6 +51,7 @@ describe('NOTME_COURSE', () => {
           expect(point.y).toBeGreaterThanOrEqual(0);
           expect(point.y).toBeLessThanOrEqual(NOTME_COURSE.goalY);
         }
+        expect(Math.hypot(obstacle.to.x - obstacle.from.x, obstacle.to.y - obstacle.from.y)).toBeGreaterThan(0);
       }
 
       if (obstacle.kind === 'circle') {
@@ -86,6 +90,68 @@ describe('NOTME_COURSE', () => {
     expect(validateCourse(wrongSections)).not.toEqual([]);
     expect(validateCourse(wrongGoal)).not.toEqual([]);
     expect(validateCourse(outsideCircle)).not.toEqual([]);
+  });
+
+  it('0길이 일반 선분과 전폭이 아닌 골인 센서를 거부한다', () => {
+    const zeroLengthLine = structuredClone(NOTME_COURSE);
+    const line = zeroLengthLine.sections[0].obstacles.find(({ kind }) => kind === 'line');
+    if (!line || line.kind !== 'line') throw new Error('램프 선분이 필요합니다.');
+    line.to = { ...line.from };
+
+    const partialSensor = structuredClone(NOTME_COURSE);
+    partialSensor.goalSensor.from.x = 1;
+
+    const zeroLengthSensor = structuredClone(NOTME_COURSE);
+    zeroLengthSensor.goalSensor.to.x = 0;
+
+    const reversedSensor = structuredClone(NOTME_COURSE);
+    reversedSensor.goalSensor = {
+      from: { x: reversedSensor.width, y: reversedSensor.goalY },
+      to: { x: 0, y: reversedSensor.goalY },
+    };
+
+    expect(validateCourse(zeroLengthLine)).toEqual(expect.arrayContaining([
+      expect.stringContaining('선분'),
+    ]));
+    expect(validateCourse(partialSensor)).not.toEqual([]);
+    expect(validateCourse(zeroLengthSensor)).not.toEqual([]);
+    expect(validateCourse(reversedSensor)).toEqual([]);
+  });
+
+  it('NaN 선분 좌표와 0 또는 음수 크기의 원형·회전봉을 거부한다', () => {
+    const nanLine = structuredClone(NOTME_COURSE);
+    const line = nanLine.sections[0].obstacles.find(({ kind }) => kind === 'line');
+    if (!line || line.kind !== 'line') throw new Error('램프 선분이 필요합니다.');
+    line.from.x = Number.NaN;
+
+    const invalidCircleRadii = [Number.NaN, 0, -1];
+    const invalidSpinnerLengths = [0, -1];
+
+    expect(validateCourse(nanLine)).toEqual(expect.arrayContaining([
+      expect.stringContaining('선분'),
+    ]));
+
+    for (const radius of invalidCircleRadii) {
+      const course = structuredClone(NOTME_COURSE);
+      const pin = course.sections[1].obstacles.find(({ kind }) => kind === 'circle');
+      if (!pin || pin.kind !== 'circle') throw new Error('핀 원형 장애물이 필요합니다.');
+      pin.radius = radius;
+
+      expect(validateCourse(course)).toEqual(expect.arrayContaining([
+        expect.stringContaining('원형 장애물'),
+      ]));
+    }
+
+    for (const length of invalidSpinnerLengths) {
+      const course = structuredClone(NOTME_COURSE);
+      const spinner = course.sections[2].obstacles.find(({ kind }) => kind === 'spinner');
+      if (!spinner || spinner.kind !== 'spinner') throw new Error('회전봉 장애물이 필요합니다.');
+      spinner.length = length;
+
+      expect(validateCourse(course)).toEqual(expect.arrayContaining([
+        expect.stringContaining('회전봉'),
+      ]));
+    }
   });
 
   it('비어 있거나 중복된 spinner ID와 폭을 넘는 회전봉을 거부한다', () => {
