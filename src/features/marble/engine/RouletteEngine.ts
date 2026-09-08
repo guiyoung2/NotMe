@@ -63,6 +63,14 @@ export class RouletteEngine {
   private initPromise: Promise<boolean> | null = null;
 
   constructor(options: RouletteEngineOptions) {
+    const seenIds = new Set<string>();
+    const duplicate = options.marbles.find(({ id }) => {
+      if (seenIds.has(id)) return true;
+      seenIds.add(id);
+      return false;
+    });
+    if (duplicate) throw new Error(`구슬 ID가 중복되었습니다: ${duplicate.id}`);
+
     this.physics = options.physics;
     this.marbles = options.marbles.map((marble) => ({ ...marble }));
     this.seedById = new Map(this.marbles.map((marble) => [marble.id, marble]));
@@ -120,11 +128,14 @@ export class RouletteEngine {
       ? this.marbles.flatMap((seed): ActiveMarble[] => {
         if (!this.activeIds.has(seed.id)) return [];
         const body = this.physics.getMarble(seed.id);
-        return body ? [{ ...seed, body }] : [];
+        return body ? [{ ...seed, body: { ...body } }] : [];
       })
       : [];
     const dynamicObstacles = this.initialized && !this.destroyed
-      ? this.physics.getDynamicObstacles()
+      ? this.physics.getDynamicObstacles().map((obstacle) => ({
+        ...obstacle,
+        center: { ...obstacle.center },
+      }))
       : [];
     const winner = this.finishOrder.length === this.marbles.length
       ? this.finishOrder[this.winnerMode === 'first' ? 0 : this.finishOrder.length - 1] ?? null

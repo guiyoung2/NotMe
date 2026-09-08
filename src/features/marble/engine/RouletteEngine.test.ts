@@ -68,6 +68,19 @@ class FakePhysics implements PhysicsAdapter {
   }
 }
 
+class ReusingSnapshotPhysics extends FakePhysics {
+  private readonly bodies = new Map<string, BodySnapshot>();
+
+  override getMarble(id: string): BodySnapshot | null {
+    const reused = this.bodies.get(id);
+    if (reused) return reused;
+
+    const body = super.getMarble(id);
+    if (body) this.bodies.set(id, body);
+    return body;
+  }
+}
+
 const seeds: MarbleSeed[] = [
   { id: 'b:0', participantId: 'b', name: '철수' },
   { id: 'a:0', participantId: 'a', name: '짱구' },
@@ -93,6 +106,16 @@ function advanceSteps(engine: RouletteEngine, count: number): void {
 }
 
 describe('RouletteEngine 순위', () => {
+  it('중복된 구슬 ID를 생성 경계에서 명확한 오류로 거부한다', () => {
+    const duplicateSeeds: MarbleSeed[] = [
+      { id: 'a:0', participantId: 'a', name: '짱구' },
+      { id: 'a:0', participantId: 'b', name: '철수' },
+    ];
+
+    expect(() => createEngine(new FakePhysics(), { marbles: duplicateSeeds }))
+      .toThrow('구슬 ID가 중복되었습니다: a:0');
+  });
+
   it('이미 도착한 구슬을 중복 기록하지 않고 마지막 구슬을 자동 확정한다', async () => {
     const physics = new FakePhysics();
     physics.onStep = (step, current) => {
@@ -253,6 +276,44 @@ describe('RouletteEngine 스킬과 정체 해소', () => {
 });
 
 describe('RouletteEngine snapshot과 수명', () => {
+  it('adapter가 객체를 재사용해도 snapshot 변경을 body와 동적 장애물에 전파하지 않는다', async () => {
+    const physics = new ReusingSnapshotPhysics();
+    physics.dynamicObstacles = [{
+      id: 'spinner:test',
+      kind: 'spinner',
+      center: { x: 13, y: 56 },
+      length: 9,
+      angle: 1.5,
+    }];
+    const engine = createEngine(physics);
+    await engine.init();
+
+    const first = engine.snapshot();
+    first.active[0].body.x = 999;
+    first.dynamicObstacles[0].angle = 999;
+    first.dynamicObstacles[0].center.x = 999;
+
+    expect(physics.getMarble('b:0')).toEqual({
+      id: 'b:0',
+      x: 12.4,
+      y: 1,
+      angle: 0,
+      radius: 0.25,
+    });
+    expect(physics.getDynamicObstacles()[0]).toEqual({
+      id: 'spinner:test',
+      kind: 'spinner',
+      center: { x: 13, y: 56 },
+      length: 9,
+      angle: 1.5,
+    });
+    expect(engine.snapshot().active[0].body.x).toBe(12.4);
+    expect(engine.snapshot().dynamicObstacles[0]).toMatchObject({
+      center: { x: 13, y: 56 },
+      angle: 1.5,
+    });
+  });
+
   it('active에 seed metadata와 body를, snapshot에 winnerMode와 동적 장애물을 포함한다', async () => {
     const physics = new FakePhysics();
     physics.dynamicObstacles = [{
