@@ -94,4 +94,16 @@ describe('Camera', () => {
 
     expect(view).toEqual({ centerY: 12, topY: 0, height: 24, zoom: 1 });
   });
+
+  it('goal 근처 active가 사라져도 직전 zoom과 viewport를 유지한다', () => {
+    const camera = new Camera();
+    const nearGoal = camera.update(
+      createSnapshot('first', [{ id: 'a:0', y: 114 }]),
+      NOTME_COURSE,
+    );
+
+    const empty = camera.update(createSnapshot('first', []), NOTME_COURSE);
+
+    expect(empty).toEqual(nearGoal);
+  });
 });

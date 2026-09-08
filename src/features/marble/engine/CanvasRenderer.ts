@@ -53,14 +53,9 @@ export class CanvasRenderer {
     context.fillStyle = COLORS.background;
     context.fillRect(0, 0, size.width, size.height);
 
-    const baseScale = Math.min(
-      size.width / this.course.width,
-      size.height / this.course.viewportHeight,
-    );
-    const worldScale = baseScale * cameraView.zoom;
+    const worldScale = size.height / cameraView.height;
     const offsetX = (size.width - this.course.width * worldScale) / 2;
-    const offsetY = (size.height - cameraView.height * worldScale) / 2
-      - cameraView.topY * worldScale;
+    const offsetY = -cameraView.topY * worldScale;
 
     context.save();
     context.translate(offsetX, offsetY);

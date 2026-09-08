@@ -226,6 +226,22 @@ describe('CanvasRenderer', () => {
     expect(minimap.arcs).toContainEqual([13, 66, 0.25, 0, Math.PI * 2]);
   });
 
+  it('세로 main 화면에 CameraView의 top부터 height까지 정확히 같은 비율로 표시한다', () => {
+    const main = createContext(260, 480);
+    const minimap = createContext(130, 300);
+    const portraitView: CameraView = { centerY: 42, topY: 30, height: 24, zoom: 1 };
+
+    new CanvasRenderer(NOTME_COURSE).render(
+      { main: main.context, minimap: minimap.context },
+      createSnapshot(),
+      portraitView,
+    );
+
+    expect(main.scale.mock.calls).toEqual([[20, 20]]);
+    expect(main.translate.mock.calls).toEqual([[-130, -600]]);
+    expect(minimap.strokeRect.mock.calls).toContainEqual([0, 30, 26, 24]);
+  });
+
   it('측정 폭이 구슬 label 영역보다 큰 긴 이름을 생략한다', () => {
     const main = createContext(260, 240, () => 5);
     const minimap = createContext(104, 240, () => 5);

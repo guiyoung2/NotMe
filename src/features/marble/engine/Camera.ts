@@ -16,31 +16,51 @@ export type CameraView = {
 };
 
 export class Camera {
-  private centerY: number | null = null;
+  private view: CameraView | null = null;
 
   update(snapshot: RaceSnapshot, course: CourseDefinition): CameraView {
     const baseHeight = Math.min(course.viewportHeight, course.goalY);
     const initialCenter = baseHeight / 2;
-    const currentCenter = this.centerY ?? initialCenter;
-    const targetY = selectTargetY(snapshot) ?? currentCenter;
+    const targetY = selectTargetY(snapshot);
+    if (targetY === null) {
+      this.view = clampView(
+        this.view ?? { centerY: initialCenter, topY: 0, height: baseHeight, zoom: 1 },
+        course,
+      );
+      return { ...this.view };
+    }
+
+    const currentCenter = this.view?.centerY ?? initialCenter;
     const zoom = calculateZoom(targetY, course.goalY);
     const height = Math.min(course.viewportHeight / zoom, course.goalY);
     const halfHeight = height / 2;
     const targetCenter = clamp(targetY, halfHeight, course.goalY - halfHeight);
-
-    this.centerY = clamp(
+    const centerY = clamp(
       currentCenter + (targetCenter - currentCenter) * FOLLOW_RATE,
       halfHeight,
       course.goalY - halfHeight,
     );
 
-    return {
-      centerY: this.centerY,
-      topY: this.centerY - halfHeight,
+    this.view = {
+      centerY,
+      topY: centerY - halfHeight,
       height,
       zoom,
     };
+    return { ...this.view };
   }
+}
+
+function clampView(view: CameraView, course: CourseDefinition): CameraView {
+  const height = Math.min(view.height, course.goalY);
+  const halfHeight = height / 2;
+  const centerY = clamp(view.centerY, halfHeight, course.goalY - halfHeight);
+  return {
+    centerY,
+    topY: centerY - halfHeight,
+    height,
+    zoom: view.zoom,
+  };
 }
 
 function selectTargetY(snapshot: RaceSnapshot): number | null {
