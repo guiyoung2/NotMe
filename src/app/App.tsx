@@ -1,9 +1,9 @@
 import type { JSX } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { LadderPage } from '../features/ladder/LadderPage';
+import { MarblePage } from '../features/marble/MarblePage';
 import { StopwatchPage } from '../features/stopwatch/StopwatchPage';
 import { HomePage } from './HomePage';
-import { PlaceholderGamePage } from './PlaceholderGamePage';
 import { ServiceWorkerManager } from './ReloadPrompt';
 
 export function App(): JSX.Element {
@@ -14,7 +14,7 @@ export function App(): JSX.Element {
           <Route path="/" element={<HomePage />} />
           <Route path="/stopwatch" element={<StopwatchPage />} />
           <Route path="/ladder" element={<LadderPage />} />
-          <Route path="/marble" element={<PlaceholderGamePage title="마블 룰렛" />} />
+          <Route path="/marble" element={<MarblePage />} />
         </Routes>
       </ServiceWorkerManager>
     </BrowserRouter>

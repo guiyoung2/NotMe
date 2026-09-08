@@ -22,6 +22,8 @@ export type MarbleGameConfig = {
 
 type MarbleSetupProps = {
   onStart: (config: MarbleGameConfig) => void;
+  initialConfig?: MarbleGameConfig;
+  onConfigChange?: (config: MarbleGameConfig) => void;
   random?: RandomSource;
 };
 
@@ -29,25 +31,40 @@ function normalizeParticipants(participants: MarbleParticipant[]): MarblePartici
   return participants.map((participant) => ({ ...participant, name: participant.name.trim() }));
 }
 
-export function MarbleSetup({ onStart, random = Math.random }: MarbleSetupProps): JSX.Element {
+export function MarbleSetup({
+  onStart,
+  initialConfig,
+  onConfigChange,
+  random = Math.random,
+}: MarbleSetupProps): JSX.Element {
   const formId = useId();
   const nextParticipantNumber = useRef(3);
-  const initialParticipants = useRef<MarbleParticipant[]>([
-    { id: `${formId}-participant-1`, name: '', count: 1 },
-    { id: `${formId}-participant-2`, name: '', count: 1 },
-  ]);
+  const initialParticipants = useRef<MarbleParticipant[]>(
+    initialConfig?.participants.map((participant) => ({ ...participant })) ?? [
+      { id: `${formId}-participant-1`, name: '', count: 1 },
+      { id: `${formId}-participant-2`, name: '', count: 1 },
+    ],
+  );
   const [participants, setParticipants] = useState(initialParticipants.current);
-  const [winnerMode, setWinnerMode] = useState<WinnerMode>('first');
-  const [skillsEnabled, setSkillsEnabled] = useState(false);
+  const [winnerMode, setWinnerMode] = useState<WinnerMode>(initialConfig?.winnerMode ?? 'first');
+  const [skillsEnabled, setSkillsEnabled] = useState(initialConfig?.skillsEnabled ?? false);
   const [shuffledMarbles, setShuffledMarbles] = useState(() => (
-    shuffleMarbles(expandMarbles(normalizeParticipants(initialParticipants.current)), random)
+    initialConfig?.shuffledMarbles.map((marble) => ({ ...marble }))
+      ?? shuffleMarbles(expandMarbles(normalizeParticipants(initialParticipants.current)), random)
   ));
   const validation = validateMarbleParticipants(participants);
   const canRemove = participants.length > 2;
 
   function commitParticipants(nextParticipants: MarbleParticipant[]) {
+    const nextMarbles = shuffleMarbles(expandMarbles(normalizeParticipants(nextParticipants)), random);
     setParticipants(nextParticipants);
-    setShuffledMarbles(shuffleMarbles(expandMarbles(normalizeParticipants(nextParticipants)), random));
+    setShuffledMarbles(nextMarbles);
+    onConfigChange?.({
+      participants: nextParticipants,
+      winnerMode,
+      skillsEnabled,
+      shuffledMarbles: nextMarbles,
+    });
   }
 
   function addParticipant() {
@@ -82,7 +99,19 @@ export function MarbleSetup({ onStart, random = Math.random }: MarbleSetupProps)
   }
 
   function shuffleCurrentMarbles() {
-    setShuffledMarbles((current) => shuffleMarbles(current, random));
+    const nextMarbles = shuffleMarbles(shuffledMarbles, random);
+    setShuffledMarbles(nextMarbles);
+    onConfigChange?.({ participants, winnerMode, skillsEnabled, shuffledMarbles: nextMarbles });
+  }
+
+  function changeWinnerMode(nextWinnerMode: WinnerMode) {
+    setWinnerMode(nextWinnerMode);
+    onConfigChange?.({ participants, winnerMode: nextWinnerMode, skillsEnabled, shuffledMarbles });
+  }
+
+  function changeSkillsEnabled(nextSkillsEnabled: boolean) {
+    setSkillsEnabled(nextSkillsEnabled);
+    onConfigChange?.({ participants, winnerMode, skillsEnabled: nextSkillsEnabled, shuffledMarbles });
   }
 
   function startRace(event: FormEvent<HTMLFormElement>) {
@@ -189,7 +218,7 @@ export function MarbleSetup({ onStart, random = Math.random }: MarbleSetupProps)
                 name={`${formId}-winner`}
                 value="first"
                 checked={winnerMode === 'first'}
-                onChange={() => setWinnerMode('first')}
+                onChange={() => changeWinnerMode('first')}
               />
               <span>첫 번째</span>
             </label>
@@ -199,7 +228,7 @@ export function MarbleSetup({ onStart, random = Math.random }: MarbleSetupProps)
                 name={`${formId}-winner`}
                 value="last"
                 checked={winnerMode === 'last'}
-                onChange={() => setWinnerMode('last')}
+                onChange={() => changeWinnerMode('last')}
               />
               <span>마지막</span>
             </label>
@@ -216,7 +245,7 @@ export function MarbleSetup({ onStart, random = Math.random }: MarbleSetupProps)
             role="switch"
             aria-label="스킬 사용"
             checked={skillsEnabled}
-            onChange={(event) => setSkillsEnabled(event.target.checked)}
+            onChange={(event) => changeSkillsEnabled(event.target.checked)}
           />
         </label>
       </div>

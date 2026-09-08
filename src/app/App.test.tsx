@@ -83,6 +83,15 @@ describe('App', () => {
     expect(screen.getByLabelText('참가자 2')).toBeInTheDocument();
   });
 
+  it('마블 경로에 실제 룰렛 설정 화면을 렌더링한다', () => {
+    window.history.replaceState({}, '', '/marble');
+
+    render(<App />);
+
+    expect(screen.getByLabelText('참가자 1 이름')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '레이스 시작' })).toBeDisabled();
+  });
+
   it('/ladder에서 설정, 개별 공개, 전체 공개, 초기화 흐름을 실행한다', async () => {
     const user = userEvent.setup();
     vi.spyOn(Math, 'random').mockReturnValue(0.99);

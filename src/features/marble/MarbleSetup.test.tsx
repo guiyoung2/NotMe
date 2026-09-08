@@ -10,6 +10,51 @@ afterEach(() => {
 });
 
 describe('MarbleSetup', () => {
+  it('저장된 설정과 구슬 순서를 그대로 복구한다', async () => {
+    const user = userEvent.setup();
+    const initialConfig: MarbleGameConfig = {
+      participants: [
+        { id: 'a', name: '짱구', count: 2 },
+        { id: 'b', name: '철수', count: 1 },
+      ],
+      winnerMode: 'last',
+      skillsEnabled: true,
+      shuffledMarbles: [
+        { id: 'a:1', participantId: 'a', name: '짱구' },
+        { id: 'b:0', participantId: 'b', name: '철수' },
+        { id: 'a:0', participantId: 'a', name: '짱구' },
+      ],
+    };
+    const onStart = vi.fn<(config: MarbleGameConfig) => void>();
+
+    render(<MarbleSetup initialConfig={initialConfig} onStart={onStart} random={() => 0.99} />);
+
+    expect(screen.getByLabelText('참가자 1 이름')).toHaveValue('짱구');
+    expect(screen.getByLabelText('참가자 1 구슬 수')).toHaveValue(2);
+    expect(screen.getByRole('radio', { name: '마지막' })).toBeChecked();
+    expect(screen.getByRole('switch', { name: '스킬 사용' })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: '레이스 시작' }));
+
+    expect(onStart).toHaveBeenCalledWith(initialConfig);
+  });
+
+  it('시작 전 설정 변경과 현재 섞인 순서를 알린다', async () => {
+    const user = userEvent.setup();
+    const changes: MarbleGameConfig[] = [];
+
+    render(<MarbleSetup onStart={() => {}} onConfigChange={(config) => changes.push(config)} random={() => 0} />);
+
+    await user.type(screen.getByLabelText('참가자 1 이름'), '짱구');
+    await user.click(screen.getByRole('radio', { name: '마지막' }));
+    await user.click(screen.getByRole('switch', { name: '스킬 사용' }));
+    await user.click(screen.getByRole('button', { name: '구슬 섞기' }));
+
+    expect(changes.at(-1)).toMatchObject({ winnerMode: 'last', skillsEnabled: true });
+    expect(changes.at(-1)?.participants[0]?.name).toBe('짱구');
+    expect(changes.at(-1)?.shuffledMarbles).toHaveLength(2);
+  });
+
   it('구슬 한 개씩 가진 빈 참가자 두 명으로 시작한다', () => {
     render(<MarbleSetup onStart={() => {}} />);
 

@@ -1,8 +1,20 @@
 .marble-setup,
-.marble-race {
+.marble-race,
+.marble-page,
+.marble-result,
+.marble-error {
   width: min(100%, 620px);
   min-width: 0;
   margin: 0 auto;
+}
+
+.marble-page__notice {
+  margin-bottom: 18px;
+  border-left: 3px solid var(--color-accent);
+  padding: 10px 12px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  line-height: 1.5;
 }
 
 .marble-setup__intro h2 {
@@ -284,6 +296,79 @@
   margin-block: 20px max(16px, env(safe-area-inset-bottom));
 }
 
+.marble-result__selected {
+  padding: 28px 20px;
+  border: 1px solid var(--color-accent);
+  border-radius: 12px;
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.marble-result__selected p { color: var(--color-muted); }
+
+.marble-result__selected h2 {
+  margin-top: 8px;
+  color: var(--color-text);
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  overflow-wrap: anywhere;
+}
+
+.marble-result__winner-marble {
+  display: block;
+  margin-top: 12px;
+  color: var(--color-accent);
+  overflow-wrap: anywhere;
+}
+
+.marble-result__ranking {
+  margin: 24px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.marble-result__ranking li {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+  padding: 13px 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.marble-result__ranking li span { color: var(--color-muted); }
+.marble-result__ranking li strong { min-width: 0; overflow-wrap: anywhere; }
+
+.marble-result__ranking .marble-result__winner-row {
+  color: var(--color-accent);
+  background: var(--color-surface);
+}
+
+.marble-result__restart {
+  width: 100%;
+  margin-block: 24px max(16px, env(safe-area-inset-bottom));
+}
+
+.marble-error {
+  padding-top: clamp(44px, 12vh, 96px);
+  text-align: center;
+}
+
+.marble-error h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(1.5rem, 6vw, 2rem);
+}
+
+.marble-error p { margin-top: 10px; color: var(--color-muted); line-height: 1.5; }
+
+.marble-error__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 24px;
+}
+
 @media (max-width: 520px) {
   .marble-participant {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -302,4 +387,5 @@
   .marble-part__remove { width: 100%; }
   .marble-total { align-items: flex-start; flex-direction: column; }
   .marble-setup__actions { grid-template-columns: 1fr; }
+  .marble-error__actions { grid-template-columns: 1fr; }
 }
