@@ -68,11 +68,19 @@ export function MarbleSetup({
   }
 
   function addParticipant() {
-    const number = nextParticipantNumber.current;
-    nextParticipantNumber.current += 1;
+    const existingIds = new Set(participants.map(({ id }) => id));
+    let number = nextParticipantNumber.current;
+    let id = `${formId}-participant-${number}`;
+
+    while (existingIds.has(id)) {
+      number += 1;
+      id = `${formId}-participant-${number}`;
+    }
+
+    nextParticipantNumber.current = number + 1;
     commitParticipants([
       ...participants,
-      { id: `${formId}-participant-${number}`, name: '', count: 1 },
+      { id, name: '', count: 1 },
     ]);
   }
 

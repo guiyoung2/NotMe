@@ -2,7 +2,13 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('react', async () => {
+  const actual = await vi.importActual<typeof import('react')>('react');
+  return { ...actual, useId: () => 'marble-form' };
+});
+
 import { MarbleSetup, type MarbleGameConfig } from './MarbleSetup';
+import { expandMarbles } from './marbleConfig';
 
 afterEach(() => {
   cleanup();
@@ -37,6 +43,44 @@ describe('MarbleSetup', () => {
     await user.click(screen.getByRole('button', { name: '레이스 시작' }));
 
     expect(onStart).toHaveBeenCalledWith(initialConfig);
+  });
+
+  it('3명 이상 저장 설정을 복구한 뒤에도 중복 없는 참가자와 구슬 ID를 발급한다', async () => {
+    const user = userEvent.setup();
+    const initialConfig: MarbleGameConfig = {
+      participants: [
+        { id: 'restored-form-participant-1', name: '짱구', count: 1 },
+        { id: 'marble-form-participant-3', name: '철수', count: 1 },
+        { id: 'marble-form-participant-4', name: '유리', count: 1 },
+      ],
+      winnerMode: 'first',
+      skillsEnabled: false,
+      shuffledMarbles: [
+        { id: 'restored-form-participant-1:0', participantId: 'restored-form-participant-1', name: '짱구' },
+        { id: 'marble-form-participant-3:0', participantId: 'marble-form-participant-3', name: '철수' },
+        { id: 'marble-form-participant-4:0', participantId: 'marble-form-participant-4', name: '유리' },
+      ],
+    };
+    const onStart = vi.fn<(config: MarbleGameConfig) => void>();
+    const firstRender = render(<MarbleSetup initialConfig={initialConfig} onStart={() => {}} />);
+    firstRender.unmount();
+
+    render(<MarbleSetup initialConfig={initialConfig} onStart={onStart} random={() => 0.99} />);
+    await user.click(screen.getByRole('button', { name: '참가자 추가' }));
+    await user.type(screen.getByLabelText('참가자 4 이름'), '맹구');
+    await user.click(screen.getByRole('button', { name: '레이스 시작' }));
+
+    const startedConfig = onStart.mock.calls[0]?.[0];
+    const participantIds = startedConfig?.participants.map(({ id }) => id) ?? [];
+    const expandedSeedIds = expandMarbles(startedConfig?.participants ?? []).map(({ id }) => id);
+    const seedIds = startedConfig?.shuffledMarbles.map(({ id }) => id) ?? [];
+    expect(onStart).toHaveBeenCalledOnce();
+    expect(participantIds).toHaveLength(4);
+    expect(new Set(participantIds).size).toBe(participantIds.length);
+    expect(new Set(expandedSeedIds).size).toBe(expandedSeedIds.length);
+    expect(seedIds).toHaveLength(4);
+    expect(new Set(seedIds).size).toBe(seedIds.length);
+    expect(participantIds.at(-1)).toBe('marble-form-participant-5');
   });
 
   it('시작 전 설정 변경과 현재 섞인 순서를 알린다', async () => {
