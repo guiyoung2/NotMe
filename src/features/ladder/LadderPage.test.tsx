@@ -124,13 +124,13 @@ describe('LadderPage', () => {
     await user.type(screen.getByLabelText('결과 2'), '벌칙');
     await user.click(screen.getByRole('button', { name: '게임 시작' }));
 
-    expect(random).toHaveBeenCalledTimes(6);
+    expect(random).toHaveBeenCalledTimes(5);
     expect(readStoredDraft()?.names).toEqual(['짱구', '철수']);
     expect(readStoredDraft()?.outcomes).toEqual(['통과', '벌칙']);
 
     await user.click(screen.getByRole('button', { name: '짱구 경로 보기' }));
     await user.click(screen.getByRole('button', { name: '전체 결과 보기' }));
-    expect(random).toHaveBeenCalledTimes(6);
+    expect(random).toHaveBeenCalledTimes(5);
   });
 
   it('개별 결과를 즉시 공개하고 전체 결과를 중복 없는 index로 저장한다', async () => {
@@ -168,6 +168,47 @@ describe('LadderPage', () => {
 
     await user.click(screen.getByRole('button', { name: '전체 결과 보기' }));
     expect(screen.getByRole('status')).toHaveTextContent('전체 결과: 짱구: 통과, 철수: 벌칙');
+  });
+
+  it('같은 설정으로 다시 하면 이름과 결과를 유지한 새 사다리를 시작한다', async () => {
+    const user = userEvent.setup();
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    renderPage();
+    await fillSetup(user);
+    await user.click(screen.getByRole('button', { name: '게임 시작' }));
+    await user.click(screen.getByRole('button', { name: '전체 결과 보기' }));
+
+    await user.click(screen.getByRole('button', { name: '같은 설정으로 다시 하기' }));
+
+    expect(random).toHaveBeenCalledTimes(10);
+    expect(readStoredDraft()).toMatchObject({
+      phase: 'playing',
+      names: ['짱구', '철수'],
+      outcomes: ['통과', '벌칙'],
+      revealedStarts: [],
+    });
+    expect(screen.queryByText('통과')).not.toBeInTheDocument();
+  });
+
+  it('설정 변경은 기존 이름과 결과가 채워진 설정으로 돌아간다', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await fillSetup(user);
+    await user.click(screen.getByRole('button', { name: '게임 시작' }));
+
+    await user.click(screen.getByRole('button', { name: '설정 변경' }));
+
+    expect(screen.getByLabelText('참가자 1')).toHaveValue('짱구');
+    expect(screen.getByLabelText('참가자 2')).toHaveValue('철수');
+    expect(screen.getByLabelText('결과 1')).toHaveValue('통과');
+    expect(screen.getByLabelText('결과 2')).toHaveValue('벌칙');
+    expect(readStoredDraft()).toEqual({
+      phase: 'setup',
+      names: ['짱구', '철수'],
+      outcomes: ['통과', '벌칙'],
+      ladder: null,
+      revealedStarts: [],
+    });
   });
 
   it('저장된 판과 공개 결과는 복구하지만 활성 애니메이션은 복구하지 않는다', () => {
@@ -233,6 +274,6 @@ describe('LadderPage', () => {
     expect(ladderStyles).toMatch(/\.ladder-play\s*{[^}]*width:\s*100%;[^}]*min-width:\s*0;/s);
     expect(ladderStyles).toMatch(/\.ladder-board__scroll\s*{[^}]*overflow-x:\s*auto;/s);
     expect(ladderStyles).toMatch(/\.ladder-board__endpoint\s*{[^}]*overflow-wrap:\s*anywhere;/s);
-    expect(ladderStyles).toMatch(/\.ladder-play__reveal-all\s*{[^}]*width:\s*100%;[^}]*margin-bottom:\s*max\(16px,\s*env\(safe-area-inset-bottom\)\);/s);
+    expect(ladderStyles).toMatch(/\.ladder-play__actions\s*{[^}]*margin-bottom:\s*max\(16px,\s*env\(safe-area-inset-bottom\)\);/s);
   });
 });

@@ -26,7 +26,10 @@ export function generateLadder(columnCount: number, random: RandomSource): Ladde
     throw new RangeError('columnCount must be an integer of at least 2');
   }
 
-  const rows = Array.from({ length: ladderRowCount(columnCount) }, () => {
+  const rowCount = ladderRowCount(columnCount);
+  const rows = Array.from({ length: rowCount }, (_, rowIndex) => {
+    if (rowIndex === rowCount - 1) return [];
+
     const links: number[] = [];
     for (let left = 0; left < columnCount - 1; left += 1) {
       if (links.at(-1) !== left - 1 && random() < 0.38) links.push(left);

@@ -307,7 +307,7 @@ describe('StopwatchPage', () => {
     expect(screen.getByRole('heading', { name: '짱구 님이 선택됐어요' })).toBeInTheDocument();
   });
 
-  it('다시 하기는 스톱워치 draft를 지우고 설정으로 돌아간다', async () => {
+  it('같은 인원으로 다시 하면 참가자 이름을 유지한 새 게임을 시작한다', async () => {
     const user = userEvent.setup();
     const clock = { now: 1000 };
     vi.spyOn(performance, 'now').mockImplementation(() => clock.now);
@@ -319,11 +319,29 @@ describe('StopwatchPage', () => {
     await saveDigit(user, clock, 2);
     await saveDigit(user, clock, 3);
     await saveDigit(user, clock, 4);
-    localStorage.setItem('notme:draft:stopwatch', 'saved');
+    await user.click(screen.getByRole('button', { name: '같은 인원으로 다시 하기' }));
 
-    await user.click(screen.getByRole('button', { name: '다시 하기' }));
+    expect(screen.getByRole('heading', { name: '짱구 차례예요' })).toBeInTheDocument();
+    expect(screen.getByText('첫 번째 측정')).toBeInTheDocument();
+  });
 
+  it('설정 변경은 기존 참가자 이름이 채워진 설정으로 돌아간다', async () => {
+    const user = userEvent.setup();
+    const clock = { now: 1000 };
+    vi.spyOn(performance, 'now').mockImplementation(() => clock.now);
+    vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1);
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+    render(<MemoryRouter><StopwatchPage /></MemoryRouter>);
+    await startTwoPlayerGame(user);
+    await saveDigit(user, clock, 1);
+    await saveDigit(user, clock, 2);
+    await saveDigit(user, clock, 3);
+    await saveDigit(user, clock, 4);
+
+    await user.click(screen.getByRole('button', { name: '설정 변경' }));
+
+    expect(screen.getByLabelText('참가자 1')).toHaveValue('짱구');
+    expect(screen.getByLabelText('참가자 2')).toHaveValue('철수');
     expect(localStorage.getItem('notme:draft:stopwatch')).toBeNull();
-    expect(screen.getByLabelText('참가자 1')).toHaveValue('');
   });
 });

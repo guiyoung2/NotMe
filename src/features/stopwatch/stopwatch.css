@@ -142,9 +142,17 @@
   font-variant-numeric: tabular-nums;
 }
 
-.stopwatch-result__restart { width: 100%; margin-top: 24px; font-weight: 700; }
+.stopwatch-result__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.stopwatch-result__actions button { font-weight: 700; }
 
 @media (max-width: 380px) {
   .stopwatch-setup__actions { grid-template-columns: 1fr; }
+  .stopwatch-result__actions { grid-template-columns: 1fr; }
   .stopwatch-timer { font-size: 3rem; }
 }

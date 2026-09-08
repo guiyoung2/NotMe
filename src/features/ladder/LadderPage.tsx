@@ -185,6 +185,19 @@ export function LadderPage(): JSX.Element {
     });
   }
 
+  function returnToSetup() {
+    if (draft.phase !== 'playing') return;
+    setActiveStart(null);
+    setAnnouncement('');
+    persistDraft({
+      phase: 'setup',
+      names: draft.names,
+      outcomes: draft.outcomes,
+      ladder: null,
+      revealedStarts: [],
+    });
+  }
+
   return (
     <GameShell title="사다리 타기" dirty={dirty} onReset={reset}>
       <div className="ladder-page">
@@ -205,9 +218,15 @@ export function LadderPage(): JSX.Element {
               activeStart={activeStart}
               onSelect={revealStart}
             />
-            <button className="button--accent ladder-play__reveal-all" type="button" onClick={revealAll}>
-              전체 결과 보기
-            </button>
+            <div className="ladder-play__actions">
+              <button className="button--accent ladder-play__reveal-all" type="button" onClick={revealAll}>
+                전체 결과 보기
+              </button>
+              <button type="button" onClick={returnToSetup}>설정 변경</button>
+              <button className="button--accent" type="button" onClick={startGame}>
+                같은 설정으로 다시 하기
+              </button>
+            </div>
           </section>
         ) : null}
       </div>

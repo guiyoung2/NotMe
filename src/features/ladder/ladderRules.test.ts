@@ -20,7 +20,7 @@ describe('generateLadder', () => {
 
     expect(ladder).toEqual({
       columnCount: 2,
-      rows: Array.from({ length: 6 }, () => [0]),
+      rows: [[0], [0], [0], [0], [0], []],
     });
   });
 

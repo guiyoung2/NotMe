@@ -87,8 +87,22 @@ export function StopwatchPage(): JSX.Element {
     setElapsedMs(0);
   }
 
-  function restart() {
-    reset();
+  function restartWithSamePlayers() {
+    if (!game) return;
+    const playerNames = game.players.map(({ name }) => name);
+    setNames(playerNames);
+    setGame(createStopwatchGame(playerNames));
+    setElapsedMs(0);
+    setWasAttemptInvalidated(false);
+  }
+
+  function returnToSetup() {
+    if (!game) return;
+    clearDraft('stopwatch');
+    setNames(game.players.map(({ name }) => name));
+    setGame(null);
+    setElapsedMs(0);
+    setWasAttemptInvalidated(false);
   }
 
   const currentPlayer = game?.players[game.currentPlayerIndex];
@@ -151,7 +165,12 @@ export function StopwatchPage(): JSX.Element {
               </li>
             ))}
           </ul>
-          <button className="button--accent stopwatch-result__restart" type="button" onClick={restart}>다시 하기</button>
+          <div className="stopwatch-result__actions">
+            <button type="button" onClick={returnToSetup}>설정 변경</button>
+            <button className="button--accent" type="button" onClick={restartWithSamePlayers}>
+              같은 인원으로 다시 하기
+            </button>
+          </div>
         </section>
       ) : currentPlayer ? (
         <section className="stopwatch-play">
