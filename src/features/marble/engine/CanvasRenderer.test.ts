@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { CameraView } from './Camera';
+import { Camera, type CameraView } from './Camera';
 import { CanvasRenderer } from './CanvasRenderer';
 import { NOTME_COURSE } from './course';
 import type { ActiveMarble, RaceSnapshot } from './RouletteEngine';
@@ -135,6 +135,8 @@ function createSnapshot(overrides: Partial<RaceSnapshot> = {}): RaceSnapshot {
 }
 
 const cameraView: CameraView = {
+  leftX: 0,
+  width: 26,
   centerY: 42,
   topY: 30,
   height: 24,
@@ -146,6 +148,39 @@ afterEach(() => {
 });
 
 describe('CanvasRenderer', () => {
+  it.each([
+    { device: '320×568', width: 288, height: 360 },
+    { device: '320×800', width: 288, height: 496 },
+    { device: '390×844', width: 358, height: 523.28 },
+  ])('$device 세로 화면은 골인 근처에서도 좌우 외벽과 추적 구슬을 모두 보여 준다', ({ width, height }) => {
+    const main = createContext(width, height);
+    const minimap = createContext(68, 150);
+    const camera = new Camera();
+    const renderer = new CanvasRenderer(NOTME_COURSE);
+    for (const y of [1, 60, 119.5]) {
+      const snapshot = createSnapshot({ active: [
+        createActive('a:0', 'a', '짱구', 0.3, y),
+        createActive('b:0', 'b', '철수', 25.7, y),
+      ] });
+      const view = camera.update(snapshot, NOTME_COURSE, { width, height });
+      main.translate.mockClear();
+      main.scale.mockClear();
+      minimap.strokeRect.mockClear();
+      renderer.render({ main: main.context, minimap: minimap.context }, snapshot, view);
+      const [offsetX, offsetY] = main.translate.mock.calls[0];
+      const [scale] = main.scale.mock.calls[0];
+      expect(offsetX).toBeGreaterThanOrEqual(0.5);
+      expect(offsetX + 26 * scale).toBeLessThanOrEqual(width - 0.5);
+      expect(offsetY + (y - 0.25) * scale).toBeGreaterThanOrEqual(-0.000001);
+      expect(offsetY + (y + 0.25) * scale).toBeLessThanOrEqual(height + 0.000001);
+      const [left, top, visibleWidth, visibleHeight] = minimap.strokeRect.mock.calls[0];
+      expect(left).toBeCloseTo(-offsetX / scale);
+      expect(top).toBeCloseTo(-offsetY / scale);
+      expect(visibleWidth).toBeCloseTo(width / scale);
+      expect(visibleHeight).toBeCloseTo(height / scale);
+    }
+  });
+
   it('DPR backing store와 CSS layout 크기를 분리하고 반복 render에서 transform을 초기화한다', () => {
     vi.stubGlobal('devicePixelRatio', 2);
     const main = createContext(260, 240);
@@ -208,7 +243,7 @@ describe('CanvasRenderer', () => {
   it('미니맵은 26x120 전체를 고정 비율로 fit하고 main camera와 독립적으로 viewport를 그린다', () => {
     const main = createContext(260, 240);
     const minimap = createContext(130, 300);
-    const zoomedView: CameraView = { centerY: 66, topY: 60, height: 12, zoom: 2 };
+    const zoomedView: CameraView = { leftX: 6.5, width: 13, centerY: 66, topY: 60, height: 12, zoom: 2 };
     const snapshot = createSnapshot({
       active: [createActive('a:0', 'a', '짱구', 13, 66)],
     });
@@ -222,14 +257,16 @@ describe('CanvasRenderer', () => {
     expect(main.scale.mock.calls).toContainEqual([20, 20]);
     expect(minimap.translate.mock.calls[0]).toEqual([32.5, 0]);
     expect(minimap.scale.mock.calls).toEqual([[2.5, 2.5]]);
-    expect(minimap.strokeRect.mock.calls).toContainEqual([0, 60, 26, 12]);
+    expect(minimap.strokeRect.mock.calls).toContainEqual([6.5, 60, 13, 12]);
     expect(minimap.arcs).toContainEqual([13, 66, 0.25, 0, Math.PI * 2]);
   });
 
-  it('세로 main 화면에 CameraView의 top부터 height까지 정확히 같은 비율로 표시한다', () => {
+  it('세로 main 화면과 미니맵에 같은 실제 가시 범위를 표시한다', () => {
     const main = createContext(260, 480);
     const minimap = createContext(130, 300);
-    const portraitView: CameraView = { centerY: 42, topY: 30, height: 24, zoom: 1 };
+    const portraitView = new Camera().update(createSnapshot({
+      active: [createActive('a:0', 'a', '짱구', 13, 42)],
+    }), NOTME_COURSE, { width: 260, height: 480 });
 
     new CanvasRenderer(NOTME_COURSE).render(
       { main: main.context, minimap: minimap.context },
@@ -237,9 +274,11 @@ describe('CanvasRenderer', () => {
       portraitView,
     );
 
-    expect(main.scale.mock.calls).toEqual([[20, 20]]);
-    expect(main.translate.mock.calls).toEqual([[-130, -600]]);
-    expect(minimap.strokeRect.mock.calls).toContainEqual([0, 30, 26, 24]);
+    expect(main.scale.mock.calls[0][0]).toBeCloseTo(260 / 27);
+    expect(main.translate.mock.calls[0][0]).toBeGreaterThan(0);
+    expect(minimap.strokeRect.mock.calls).toContainEqual([
+      portraitView.leftX, portraitView.topY, portraitView.width, portraitView.height,
+    ]);
   });
 
   it('측정 폭이 구슬 label 영역보다 큰 긴 이름을 생략한다', () => {
@@ -249,7 +288,7 @@ describe('CanvasRenderer', () => {
     new CanvasRenderer(NOTME_COURSE).render(
       { main: main.context, minimap: minimap.context },
       createSnapshot({ active: [createActive('a:0', 'a', '아주 긴 참가자 이름', 13, 66)] }),
-      { centerY: 66, topY: 60, height: 12, zoom: 2 },
+      { leftX: 6.5, width: 13, centerY: 66, topY: 60, height: 12, zoom: 2 },
     );
 
     expect(main.fillTexts).toEqual([]);

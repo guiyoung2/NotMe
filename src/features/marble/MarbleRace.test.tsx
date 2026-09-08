@@ -43,7 +43,7 @@ function createRuntime(overrides: {
       setFastForward: vi.fn(),
       destroy: vi.fn(),
     },
-    camera: { update: vi.fn(() => ({ centerY: 12, topY: 0, height: 24, zoom: 1 })) },
+    camera: { update: vi.fn(() => ({ leftX: 0, width: 26, centerY: 12, topY: 0, height: 24, zoom: 1 })) },
     renderer: { render: vi.fn() },
   };
   const factory = vi.fn(() => runtime) as MarbleRaceRuntimeFactory;
@@ -74,6 +74,49 @@ afterEach(() => {
 });
 
 describe('MarbleRace 수명', () => {
+  it('매 frame의 예상 순위 변화는 발표하지 않고 도착만 즉시 한 번 알린다', async () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => { frames.push(callback); return frames.length; });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+    let snapshot = structuredClone(runningSnapshot);
+    const { factory } = createRuntime({ snapshot: () => snapshot });
+    const { container } = render(<MarbleRace config={config} onFinish={() => {}} onAbort={() => {}} onError={() => {}} runtimeFactory={factory} />);
+    await act(async () => Promise.resolve());
+    const live = container.querySelector('[aria-live="polite"]')!;
+    const initialAnnouncement = live.textContent;
+    const ranking = screen.getByRole('list', { name: '진행 순위' });
+    const initialRanking = ranking.textContent;
+    act(() => frames.shift()?.(0));
+    snapshot = { ...snapshot, active: snapshot.active.map((marble, index) => ({ ...marble, body: { ...marble.body, y: index === 1 ? 30 : 20 } })) };
+    act(() => frames.shift()?.(16));
+    expect(live.textContent).toBe(initialAnnouncement);
+    expect(ranking.textContent).toBe(initialRanking);
+    act(() => frames.shift()?.(500));
+    expect(ranking.textContent).not.toBe(initialRanking);
+    expect(live.textContent).toBe(initialAnnouncement);
+
+    snapshot = { ...snapshot, active: snapshot.active.slice(0, 1), finishOrder: [{ ...config.shuffledMarbles[1], rank: 1 }] };
+    act(() => frames.shift()?.(516));
+    expect(live).toHaveTextContent(/1위.*철수.*도착/);
+    const announcedNode = live.firstChild;
+    act(() => frames.shift()?.(532));
+    act(() => frames.shift()?.(1100));
+    expect(live.firstChild).toBe(announcedNode);
+  });
+
+  it('Canvas의 실제 크기를 카메라에 전달한다', async () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => { frames.push(callback); return frames.length; });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+    const { runtime, factory } = createRuntime();
+    render(<MarbleRace config={config} onFinish={() => {}} onAbort={() => {}} onError={() => {}} runtimeFactory={factory} />);
+    const canvas = screen.getByTestId('marble-canvas');
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({ width: 288, height: 496 } as DOMRect);
+    await act(async () => Promise.resolve());
+    act(() => frames.shift()?.(0));
+    expect(runtime.camera.update).toHaveBeenCalledWith(runningSnapshot, expect.any(Object), { width: 288, height: 496 });
+  });
+
   it('초기화가 끝난 뒤 timestamp delta로 그리고 당첨을 한 번만 알린 후 loop를 멈춘다', async () => {
     const frames: FrameRequestCallback[] = [];
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {

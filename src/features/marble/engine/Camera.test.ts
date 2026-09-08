@@ -24,7 +24,7 @@ function createSnapshot(
 }
 
 describe('Camera', () => {
-  it('first는 y가 가장 큰 active 선두를 10% 보간해 추적한다', () => {
+  it('first는 y가 가장 큰 선두 전체가 보이는 범위 안에서 보간한다', () => {
     const camera = new Camera();
 
     const view = camera.update(createSnapshot('first', [
@@ -33,12 +33,12 @@ describe('Camera', () => {
       { id: 'c:0', y: 60 },
     ]), NOTME_COURSE);
 
-    expect(view.centerY).toBeCloseTo(18.8);
-    expect(view.topY).toBeCloseTo(6.8);
+    expect(view.centerY).toBeCloseTo(68.25);
+    expect(view.topY).toBeCloseTo(56.25);
     expect(view.height).toBe(24);
   });
 
-  it('last는 y가 가장 작은 active 후미를 10% 보간해 추적한다', () => {
+  it('last는 y가 가장 작은 후미 전체가 보이는 범위 안에서 보간한다', () => {
     const camera = new Camera();
 
     const view = camera.update(createSnapshot('last', [
@@ -47,8 +47,8 @@ describe('Camera', () => {
       { id: 'c:0', y: 60 },
     ]), NOTME_COURSE);
 
-    expect(view.centerY).toBeCloseTo(14.8);
-    expect(view.topY).toBeCloseTo(2.8);
+    expect(view.centerY).toBeCloseTo(28.25);
+    expect(view.topY).toBeCloseTo(16.25);
     expect(view.height).toBe(24);
   });
 
@@ -92,7 +92,7 @@ describe('Camera', () => {
   it('active가 없으면 유한하고 안전한 코스 상단 viewport를 반환한다', () => {
     const view = new Camera().update(createSnapshot('first', []), NOTME_COURSE);
 
-    expect(view).toEqual({ centerY: 12, topY: 0, height: 24, zoom: 1 });
+    expect(view).toMatchObject({ centerY: 12, topY: 0, height: 24, zoom: 1 });
   });
 
   it('goal 근처 active가 사라져도 직전 zoom과 viewport를 유지한다', () => {
@@ -105,5 +105,13 @@ describe('Camera', () => {
     const empty = camera.update(createSnapshot('first', []), NOTME_COURSE);
 
     expect(empty).toEqual(nearGoal);
+  });
+
+  it('active가 없는 화면도 크기 변경에 맞춰 실제 가시 범위를 다시 계산한다', () => {
+    const camera = new Camera();
+    camera.update(createSnapshot('first', []), NOTME_COURSE, { width: 288, height: 360 });
+    const view = camera.update(createSnapshot('first', []), NOTME_COURSE, { width: 288, height: 496 });
+    expect(view.width / view.height).toBeCloseTo(288 / 496);
+    expect(view.width).toBeGreaterThan(26);
   });
 });

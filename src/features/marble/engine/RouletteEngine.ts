@@ -1,10 +1,10 @@
 import type { MarbleSeed, RandomSource } from '../marbleConfig';
 import { NOTME_COURSE } from './course';
 import { SkillSystem } from './SkillSystem';
-import type { BodySnapshot, DynamicObstacleSnapshot, PhysicsAdapter } from './types';
+import type { BodySnapshot, CoursePoint, DynamicObstacleSnapshot, PhysicsAdapter } from './types';
 
 const FIXED_STEP_MS = 10;
-const MAX_ACCUMULATOR_MS = 100;
+const MAX_REAL_DELTA_MS = 100;
 const START_HORIZONTAL_GAP = 0.6;
 const START_VERTICAL_GAP = 0.6;
 const START_MARGIN_X = 1;
@@ -56,6 +56,8 @@ export class RouletteEngine {
   private readonly finishedIds = new Set<string>();
   private readonly finishOrder: FinishedMarble[] = [];
   private readonly stuckTrackers = new Map<string, StuckTracker>();
+  private readonly startPositions = new Map<string, CoursePoint>();
+  private readonly previousPositions = new Map<string, CoursePoint>();
   private accumulatorMs = 0;
   private speed: 1 | 4 = 1;
   private initialized = false;
@@ -102,10 +104,7 @@ export class RouletteEngine {
       return;
     }
 
-    this.accumulatorMs = Math.min(
-      this.accumulatorMs + deltaMs * this.speed,
-      MAX_ACCUMULATOR_MS,
-    );
+    this.accumulatorMs += Math.min(deltaMs, MAX_REAL_DELTA_MS) * this.speed;
 
     while (this.accumulatorMs >= FIXED_STEP_MS) {
       this.physics.step(FIXED_STEP_MS / 1_000);
@@ -158,6 +157,8 @@ export class RouletteEngine {
     this.initialized = false;
     this.activeIds.clear();
     this.stuckTrackers.clear();
+    this.previousPositions.clear();
+    this.startPositions.clear();
     this.skillSystem.clear();
     this.physics.destroy();
   }
@@ -173,6 +174,8 @@ export class RouletteEngine {
         const position = positions[index];
         this.physics.createMarble({ id: marble.id, ...position });
         this.activeIds.add(marble.id);
+        this.startPositions.set(marble.id, position);
+        this.previousPositions.set(marble.id, { ...position });
         this.stuckTrackers.set(marble.id, { ...position, elapsedMs: 0 });
       }
       this.skillSystem.register(this.marbles.map(({ id }) => id));
@@ -194,12 +197,28 @@ export class RouletteEngine {
 
     for (const marble of this.marbles) {
       const body = activeBodies.get(marble.id);
-      if (body && body.y >= NOTME_COURSE.goalY) this.finish(marble.id);
-    }
-
-    if (this.activeIds.size === 1 && this.finishOrder.length === this.marbles.length - 1) {
-      const lastId = this.activeIds.values().next().value;
-      if (lastId) this.finish(lastId);
+      if (!body) continue;
+      const previous = this.previousPositions.get(marble.id)!;
+      const insideCourse = Number.isFinite(body.x) && Number.isFinite(body.y)
+        && body.x >= 0 && body.x <= NOTME_COURSE.width && body.y >= 0;
+      const crossing = previous.y < NOTME_COURSE.goalY && body.y >= NOTME_COURSE.goalY;
+      const crossingX = crossing
+        ? previous.x + (body.x - previous.x) * (NOTME_COURSE.goalY - previous.y) / (body.y - previous.y)
+        : Number.NaN;
+      const goalLeft = Math.min(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
+      const goalRight = Math.max(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
+      if (insideCourse && crossing && crossingX >= goalLeft + body.radius && crossingX <= goalRight - body.radius) {
+        this.finish(marble.id);
+      } else if (!insideCourse || body.y >= NOTME_COURSE.goalY) {
+        // 이탈로 전진 이득을 얻지 않도록 각 구슬의 확정된 시작 위치로 복귀한다.
+        const start = this.startPositions.get(marble.id)!;
+        this.physics.createMarble({ id: marble.id, ...start });
+        this.previousPositions.set(marble.id, { ...start });
+        this.stuckTrackers.set(marble.id, { ...start, elapsedMs: 0 });
+        activeBodies.delete(marble.id);
+      } else {
+        this.previousPositions.set(marble.id, { x: body.x, y: body.y });
+      }
     }
 
     if (this.finishOrder.length === this.marbles.length) return;
@@ -224,6 +243,8 @@ export class RouletteEngine {
     this.finishedIds.add(id);
     this.activeIds.delete(id);
     this.stuckTrackers.delete(id);
+    this.previousPositions.delete(id);
+    this.startPositions.delete(id);
     this.skillSystem.remove(id);
     this.finishOrder.push({ ...seed, rank: this.finishOrder.length + 1 });
     this.physics.removeMarble(id);

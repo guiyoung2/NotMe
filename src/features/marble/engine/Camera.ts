@@ -6,6 +6,9 @@ const GOAL_ZOOM_DISTANCE = 12;
 const MAX_ZOOM = 2;
 
 export type CameraView = {
+  /** 화면 왼쪽과 가시 폭의 월드 좌표 */
+  leftX: number;
+  width: number;
   /** 현재 화면 중심의 코스 월드 y 좌표 */
   centerY: number;
   /** 현재 화면 상단의 코스 월드 y 좌표 */
@@ -18,30 +21,34 @@ export type CameraView = {
 export class Camera {
   private view: CameraView | null = null;
 
-  update(snapshot: RaceSnapshot, course: CourseDefinition): CameraView {
-    const baseHeight = Math.min(course.viewportHeight, course.goalY);
-    const initialCenter = baseHeight / 2;
+  update(
+    snapshot: RaceSnapshot,
+    course: CourseDefinition,
+    viewport?: { width: number; height: number },
+  ): CameraView {
+    const aspectRatio = viewport ? viewport.width / viewport.height : null;
+    const minimumHeight = aspectRatio ? (course.width + 1) / aspectRatio : 0;
     const targetY = selectTargetY(snapshot);
-    if (targetY === null) {
-      this.view = clampView(
-        this.view ?? { centerY: initialCenter, topY: 0, height: baseHeight, zoom: 1 },
-        course,
-      );
-      return { ...this.view };
-    }
-
-    const currentCenter = this.view?.centerY ?? initialCenter;
-    const zoom = calculateZoom(targetY, course.goalY);
-    const height = Math.min(course.viewportHeight / zoom, course.goalY);
+    const zoom = targetY === null ? this.view?.zoom ?? 1 : calculateZoom(targetY, course.goalY);
+    const height = Math.max(Math.min(course.viewportHeight / zoom, course.goalY), minimumHeight);
+    const width = aspectRatio ? height * aspectRatio : course.width;
     const halfHeight = height / 2;
-    const targetCenter = clamp(targetY, halfHeight, course.goalY - halfHeight);
-    const centerY = clamp(
-      currentCenter + (targetCenter - currentCenter) * FOLLOW_RATE,
+    const currentCenter = this.view?.centerY ?? Math.max(course.viewportHeight, minimumHeight) / 2;
+    const targetCenter = clamp(targetY ?? currentCenter, halfHeight, course.goalY - halfHeight);
+    const followedCenter = currentCenter + (targetCenter - currentCenter) * FOLLOW_RATE;
+    // 급격한 선두 교체나 배속 중에도 추적 구슬 전체가 화면에 남도록 보간 범위를 제한한다.
+    const visibleCenter = targetY === null
+      ? currentCenter
+      : clamp(followedCenter, targetY - halfHeight + 0.25, targetY + halfHeight - 0.25);
+    const centerY = height >= course.goalY ? course.goalY / 2 : clamp(
+      visibleCenter,
       halfHeight,
       course.goalY - halfHeight,
     );
 
     this.view = {
+      leftX: (course.width - width) / 2,
+      width,
       centerY,
       topY: centerY - halfHeight,
       height,
@@ -49,18 +56,6 @@ export class Camera {
     };
     return { ...this.view };
   }
-}
-
-function clampView(view: CameraView, course: CourseDefinition): CameraView {
-  const height = Math.min(view.height, course.goalY);
-  const halfHeight = height / 2;
-  const centerY = clamp(view.centerY, halfHeight, course.goalY - halfHeight);
-  return {
-    centerY,
-    topY: centerY - halfHeight,
-    height,
-    zoom: view.zoom,
-  };
 }
 
 function selectTargetY(snapshot: RaceSnapshot): number | null {

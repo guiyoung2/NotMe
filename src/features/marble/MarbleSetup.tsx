@@ -31,6 +31,10 @@ function normalizeParticipants(participants: MarbleParticipant[]): MarblePartici
   return participants.map((participant) => ({ ...participant, name: participant.name.trim() }));
 }
 
+function hasValidCount({ count }: MarbleParticipant): boolean {
+  return Number.isInteger(count) && count >= 1 && count <= MAX_MARBLES;
+}
+
 export function MarbleSetup({
   onStart,
   initialConfig,
@@ -46,6 +50,7 @@ export function MarbleSetup({
     ],
   );
   const [participants, setParticipants] = useState(initialParticipants.current);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [winnerMode, setWinnerMode] = useState<WinnerMode>(initialConfig?.winnerMode ?? 'first');
   const [skillsEnabled, setSkillsEnabled] = useState(initialConfig?.skillsEnabled ?? false);
   const [shuffledMarbles, setShuffledMarbles] = useState(() => (
@@ -56,7 +61,7 @@ export function MarbleSetup({
   const canRemove = participants.length > 2;
 
   function commitParticipants(nextParticipants: MarbleParticipant[]) {
-    const nextMarbles = shuffleMarbles(expandMarbles(normalizeParticipants(nextParticipants)), random);
+    const nextMarbles = shuffleMarbles(expandMarbles(normalizeParticipants(nextParticipants).filter(hasValidCount)), random);
     setParticipants(nextParticipants);
     setShuffledMarbles(nextMarbles);
     onConfigChange?.({
@@ -90,6 +95,7 @@ export function MarbleSetup({
   }
 
   function updateParticipant(id: string, update: Partial<Pick<MarbleParticipant, 'name' | 'count'>>) {
+    setTouched((current) => ({ ...current, [`${id}-${'name' in update ? 'name' : 'count'}`]: true }));
     commitParticipants(participants.map((participant) => (
       participant.id === id ? { ...participant, ...update } : participant
     )));
@@ -102,8 +108,7 @@ export function MarbleSetup({
     }
 
     const count = Number(value);
-    if (!Number.isInteger(count)) return;
-    updateParticipant(id, { count: Math.min(MAX_MARBLES, Math.max(1, count)) });
+    updateParticipant(id, { count });
   }
 
   function shuffleCurrentMarbles() {
@@ -146,18 +151,26 @@ export function MarbleSetup({
           const nameId = `${formId}-name-${participant.id}`;
           const countId = `${formId}-count-${participant.id}`;
           const count = participant.count;
+          const nameError = touched[`${participant.id}-name`] && !participant.name.trim()
+            ? '이름이 비어 있어요. 공백 외의 이름을 입력해 주세요.' : '';
+          const countError = touched[`${participant.id}-count`] && !hasValidCount(participant)
+            ? `${count ? '허용되지 않는 개수예요.' : '개수가 비어 있거나 0이에요.'} 1~${MAX_MARBLES} 사이의 정수를 입력해 주세요.` : '';
 
           return (
             <li className="marble-participant" key={participant.id}>
-              <label className="marble-participant__name" htmlFor={nameId}>
-                <span>참가자 {index + 1} 이름</span>
+              <div className="marble-participant__name">
+                <label htmlFor={nameId}>참가자 {index + 1} 이름</label>
                 <input
                   id={nameId}
                   value={participant.name}
                   placeholder="이름"
+                  aria-invalid={nameError ? true : undefined}
+                  aria-describedby={nameError ? `${nameId}-error` : undefined}
                   onChange={(event) => updateParticipant(participant.id, { name: event.target.value })}
+                  onBlur={() => setTouched((current) => ({ ...current, [`${participant.id}-name`]: true }))}
                 />
-              </label>
+                {nameError && <span className="marble-participant__error" id={`${nameId}-error`}>{nameError}</span>}
+              </div>
 
               <div className="marble-participant__count">
                 <label htmlFor={countId}>참가자 {index + 1} 구슬 수</label>
@@ -177,10 +190,9 @@ export function MarbleSetup({
                     min={1}
                     max={MAX_MARBLES}
                     value={count || ''}
+                    aria-invalid={countError ? true : undefined}
+                    aria-describedby={countError ? `${countId}-error` : undefined}
                     onChange={(event) => updateCount(participant.id, event.target.value)}
-                    onBlur={() => {
-                      if (count < 1) updateParticipant(participant.id, { count: 1 });
-                    }}
                   />
                   <button
                     type="button"
@@ -191,6 +203,7 @@ export function MarbleSetup({
                     +
                   </button>
                 </div>
+                {countError && <p className="marble-participant__error" id={`${countId}-error`}>{countError}</p>}
               </div>
 
               <button

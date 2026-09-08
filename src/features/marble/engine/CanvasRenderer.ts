@@ -54,7 +54,7 @@ export class CanvasRenderer {
     context.fillRect(0, 0, size.width, size.height);
 
     const worldScale = size.height / cameraView.height;
-    const offsetX = (size.width - this.course.width * worldScale) / 2;
+    const offsetX = -cameraView.leftX * worldScale;
     const offsetY = -cameraView.topY * worldScale;
 
     context.save();
@@ -92,7 +92,7 @@ export class CanvasRenderer {
     drawMarbles(context, snapshot.active, scale, false);
     context.strokeStyle = COLORS.viewport;
     context.lineWidth = 1.5 / scale;
-    context.strokeRect(0, cameraView.topY, this.course.width, cameraView.height);
+    context.strokeRect(cameraView.leftX, cameraView.topY, cameraView.width, cameraView.height);
     context.restore();
   }
 }

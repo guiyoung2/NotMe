@@ -9,13 +9,15 @@ import { NOTME_COURSE } from './engine/course';
 import { RouletteEngine, type RaceSnapshot } from './engine/RouletteEngine';
 import './marble.css';
 
+const RANKING_UPDATE_INTERVAL_MS = 500;
+
 type RaceEngine = Pick<
   RouletteEngine,
   'init' | 'advance' | 'snapshot' | 'setFastForward' | 'destroy'
 >;
 
 type RaceCamera = {
-  update(snapshot: RaceSnapshot, course: typeof NOTME_COURSE): CameraView;
+  update(snapshot: RaceSnapshot, course: typeof NOTME_COURSE, viewport: { width: number; height: number }): CameraView;
 };
 
 type RaceRenderer = {
@@ -68,6 +70,7 @@ export function MarbleRace({
   const onErrorRef = useRef(onError);
   const [loading, setLoading] = useState(true);
   const [snapshot, setSnapshot] = useState<RaceSnapshot | null>(null);
+  const [announcement, setAnnouncement] = useState('');
 
   onFinishRef.current = onFinish;
   onErrorRef.current = onError;
@@ -79,9 +82,12 @@ export function MarbleRace({
     let errorReported = false;
     let frameId: number | null = null;
     let lastTimestamp: number | null = null;
+    let lastRankingTimestamp: number | null = null;
+    let announcedFinishCount = 0;
 
     setLoading(true);
     setSnapshot(null);
+    setAnnouncement('');
 
     const reportError = (error: unknown) => {
       if (!active || errorReported || finished) return;
@@ -110,9 +116,23 @@ export function MarbleRace({
           lastTimestamp = timestamp;
           runtime.engine.advance(deltaMs);
           const nextSnapshot = runtime.engine.snapshot();
-          const view = runtime.camera.update(nextSnapshot, NOTME_COURSE);
+          const bounds = mainCanvasRef.current!.getBoundingClientRect();
+          const view = runtime.camera.update(nextSnapshot, NOTME_COURSE, {
+            width: bounds.width || 1,
+            height: bounds.height || 1,
+          });
           runtime.renderer.render(target, nextSnapshot, view);
-          setSnapshot(nextSnapshot);
+          const hasArrivals = nextSnapshot.finishOrder.length > announcedFinishCount;
+          if (hasArrivals) {
+            setAnnouncement(nextSnapshot.finishOrder.slice(announcedFinishCount)
+              .map(({ rank, name }) => `${rank}위 ${name} 도착`).join(', '));
+            announcedFinishCount = nextSnapshot.finishOrder.length;
+          }
+          lastRankingTimestamp ??= timestamp;
+          if (hasArrivals || timestamp - lastRankingTimestamp >= RANKING_UPDATE_INTERVAL_MS) {
+            setSnapshot(nextSnapshot);
+            lastRankingTimestamp = timestamp;
+          }
 
           if (nextSnapshot.winner) {
             finished = true;
@@ -196,7 +216,6 @@ export function MarbleRace({
         })),
     ]
     : [];
-  const liveRanking = rankings.slice(0, 3).map(({ label, name }) => `${label} ${name}`).join(', ');
 
   return (
     <section className="marble-race" aria-busy={loading}>
@@ -221,7 +240,7 @@ export function MarbleRace({
       </div>
 
       <p className="marble-race__speed-guide">누르고 있는 동안 4배속</p>
-      <p className="marble-race__live" aria-live="polite" aria-atomic="true">{liveRanking}</p>
+      <p className="marble-race__live" aria-live="polite" aria-atomic="true">{announcement}</p>
 
       <section className="marble-ranking">
         <h2>진행 순위</h2>

@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Box2dPhysics } from './Box2dPhysics';
+import { NOTME_COURSE } from './course';
 import type { CourseDefinition } from './types';
 
 const testCourse: CourseDefinition = {
@@ -56,6 +57,35 @@ describe('Box2dPhysics', () => {
     physics.destroy();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  it('시작 영역에서 위쪽으로 흔들린 구슬도 상단과 양쪽 외벽 안에 머문다', () => {
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.75).mockReturnValueOnce(0);
+    physics.createCourse(NOTME_COURSE);
+    physics.createMarble({ id: 'edge', x: 25, y: 1 });
+    physics.shakeMarble('edge');
+
+    for (let step = 0; step < 100; step += 1) {
+      physics.step(0.01);
+      const body = physics.getMarble('edge')!;
+      expect(body.y).toBeGreaterThanOrEqual(0);
+      expect(body.x).toBeGreaterThanOrEqual(0);
+      expect(body.x).toBeLessThanOrEqual(26);
+    }
+  });
+
+  it('주입한 난수로 동일한 정체 해소 임펄스를 재현한다', async () => {
+    const deterministic = new Box2dPhysics(() => 0.75);
+    try {
+      await deterministic.init();
+      deterministic.createMarble({ id: 'a', x: 5, y: 1 });
+      deterministic.shakeMarble('a');
+      const velocity = getVelocity(deterministic, 'a');
+      expect(velocity.x).toBeCloseTo(12.7324, 3);
+      expect(velocity.y).toBeCloseTo(12.7324, 3);
+    } finally {
+      deterministic.destroy();
+    }
   });
 
   it('중력 스텝 다음 구슬의 y가 증가한다', async () => {

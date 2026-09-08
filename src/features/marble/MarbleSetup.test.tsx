@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,6 +16,42 @@ afterEach(() => {
 });
 
 describe('MarbleSetup', () => {
+  it.each(['0', '-1', '101', '1.5', '1000000000'])('잘못된 개수 %s의 허용 범위를 입력 근처에서 안내한다', async (value) => {
+    const user = userEvent.setup();
+    render(<MarbleSetup onStart={() => {}} />);
+    await user.type(screen.getByLabelText('참가자 1 이름'), '짱구');
+    await user.type(screen.getByLabelText('참가자 2 이름'), '철수');
+    const count = screen.getByLabelText('참가자 1 구슬 수');
+    fireEvent.change(count, { target: { value } });
+    expect(count).toHaveAttribute('aria-invalid', 'true');
+    expect(count).toHaveAccessibleDescription(/1.*100.*정수.*입력/);
+    expect(screen.getByRole('button', { name: '레이스 시작' })).toBeDisabled();
+  });
+
+  it('수정한 빈 이름과 개수 입력에 이유와 해결 방법을 연결하고 수정하면 오류를 지운다', async () => {
+    const user = userEvent.setup();
+    render(<MarbleSetup onStart={() => {}} />);
+    const name = screen.getByLabelText('참가자 1 이름');
+    const count = screen.getByLabelText('참가자 1 구슬 수');
+    expect(name).not.toHaveAttribute('aria-invalid', 'true');
+    await user.type(name, ' ');
+    await user.tab();
+    expect(name).toHaveAttribute('aria-invalid', 'true');
+    expect(name).toHaveAccessibleName('참가자 1 이름');
+    expect(name).toHaveAccessibleDescription(/이름.*비어.*공백.*이름.*입력/);
+    await user.clear(count);
+    expect(count).toHaveAttribute('aria-invalid', 'true');
+    expect(count).toHaveAccessibleDescription(/개수.*비어.*1.*100.*입력/);
+    await user.tab();
+    expect(count).toHaveAttribute('aria-invalid', 'true');
+    await user.type(count, '3');
+    await user.type(name, '짱구');
+    expect(name).not.toHaveAttribute('aria-invalid', 'true');
+    expect(name).not.toHaveAttribute('aria-describedby');
+    expect(count).not.toHaveAttribute('aria-invalid', 'true');
+    expect(count).not.toHaveAttribute('aria-describedby');
+  });
+
   it('저장된 설정과 구슬 순서를 그대로 복구한다', async () => {
     const user = userEvent.setup();
     const initialConfig: MarbleGameConfig = {

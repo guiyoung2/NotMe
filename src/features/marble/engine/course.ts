@@ -7,6 +7,7 @@ export const NOTME_COURSE: CourseDefinition = {
   viewportHeight: 24,
   goalY: 120,
   walls: [
+    { kind: 'line', from: { x: 0, y: 0 }, to: { x: 26, y: 0 } },
     { kind: 'line', from: { x: 0, y: 0 }, to: { x: 0, y: 120 } },
     { kind: 'line', from: { x: 26, y: 0 }, to: { x: 26, y: 120 } },
   ],
@@ -14,7 +15,7 @@ export const NOTME_COURSE: CourseDefinition = {
     {
       kind: 'ramps',
       obstacles: [
-        { kind: 'line', from: { x: 2, y: 8 }, to: { x: 18, y: 15 } },
+        { kind: 'line', from: { x: 2, y: 8 }, to: { x: 16, y: 14.125 } },
         { kind: 'line', from: { x: 24, y: 11 }, to: { x: 8, y: 22 } },
         { kind: 'line', from: { x: 3, y: 24 }, to: { x: 14, y: 28 } },
       ],

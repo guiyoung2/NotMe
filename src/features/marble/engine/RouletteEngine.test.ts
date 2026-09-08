@@ -116,11 +116,12 @@ describe('RouletteEngine 순위', () => {
       .toThrow('구슬 ID가 중복되었습니다: a:0');
   });
 
-  it('이미 도착한 구슬을 중복 기록하지 않고 마지막 구슬을 자동 확정한다', async () => {
+  it('이미 도착한 구슬을 중복 기록하지 않고 마지막 구슬도 골인할 때까지 기다린다', async () => {
     const physics = new FakePhysics();
     physics.onStep = (step, current) => {
       if (step === 1) current.marbles.get('b:0')!.y = NOTME_COURSE.goalY;
       if (step === 2) current.marbles.get('a:0')!.y = NOTME_COURSE.goalY + 1;
+      if (step === 3) current.marbles.get('c:0')!.y = NOTME_COURSE.goalY;
     };
     const engine = createEngine(physics);
     await engine.init();
@@ -130,12 +131,14 @@ describe('RouletteEngine 순위', () => {
     expect(engine.snapshot().winner).toBeNull();
 
     engine.advance(10);
+    expect(engine.snapshot().finishOrder.map(({ id }) => id)).toEqual(['b:0', 'a:0']);
+    expect(engine.snapshot().winner).toBeNull();
     engine.advance(30);
 
     expect(engine.snapshot().finishOrder.map(({ id }) => id)).toEqual(['b:0', 'a:0', 'c:0']);
     expect(engine.snapshot().winner?.id).toBe('c:0');
     expect(physics.removed).toEqual(['b:0', 'a:0', 'c:0']);
-    expect(physics.stepSeconds).toEqual([0.01, 0.01]);
+    expect(physics.stepSeconds).toEqual([0.01, 0.01, 0.01]);
   });
 
   it('전체 순위가 확정된 뒤에만 first 당첨자를 공개한다', async () => {
@@ -143,6 +146,7 @@ describe('RouletteEngine 순위', () => {
     physics.onStep = (step, current) => {
       if (step === 1) current.marbles.get('b:0')!.y = NOTME_COURSE.goalY;
       if (step === 2) current.marbles.get('a:0')!.y = NOTME_COURSE.goalY;
+      if (step === 3) current.marbles.get('c:0')!.y = NOTME_COURSE.goalY;
     };
     const engine = createEngine(physics, { winnerMode: 'first' });
     await engine.init();
@@ -150,8 +154,27 @@ describe('RouletteEngine 순위', () => {
     engine.advance(10);
     expect(engine.snapshot().winner).toBeNull();
 
-    engine.advance(10);
+    engine.advance(20);
     expect(engine.snapshot().winner?.id).toBe('b:0');
+  });
+
+  it.each([
+    { x: -1, y: 121 }, { x: 27, y: 121 }, { x: 13, y: -1 }, { x: 0.1, y: 121 },
+  ])('코스 밖 또는 골인 폭 밖 위치 ($x, $y)는 기록하지 않고 원래 시작 위치로 복구한다', async (position) => {
+    const physics = new FakePhysics();
+    const engine = createEngine(physics);
+    await engine.init();
+    const start = physics.getMarble('b:0');
+    physics.onStep = (step, current) => {
+      if (step === 1) Object.assign(current.marbles.get('b:0')!, position);
+    };
+
+    engine.advance(10);
+
+    expect(engine.snapshot().finishOrder).toEqual([]);
+    expect(physics.getMarble('b:0')).toEqual(start);
+    engine.advance(10);
+    expect(engine.snapshot().finishOrder).toEqual([]);
   });
 
   it('같은 step의 동시 도착을 전달된 shuffled seed 순서로 확정한다', async () => {
@@ -173,7 +196,7 @@ describe('RouletteEngine 순위', () => {
 });
 
 describe('RouletteEngine 고정 step과 배속', () => {
-  it('10ms step을 사용하고 속도 반영 후 accumulator를 100ms로 제한한다', async () => {
+  it('10ms step을 사용하고 실제 frame delta를 100ms로 제한한다', async () => {
     const physics = new FakePhysics();
     const engine = createEngine(physics);
     await engine.init();
@@ -186,6 +209,32 @@ describe('RouletteEngine 고정 step과 배속', () => {
     engine.advance(1_000);
     expect(physics.stepSeconds).toHaveLength(11);
     expect(new Set(physics.stepSeconds)).toEqual(new Set([0.01]));
+  });
+
+  it.each([
+    { delta: 16.7, normalSteps: 1670, fastSteps: 6680 },
+    { delta: 33.3, normalSteps: 3330, fastSteps: 13320 },
+    { delta: 50, normalSteps: 5000, fastSteps: 20000 },
+    { delta: 100, normalSteps: 10000, fastSteps: 40000 },
+  ])('$delta ms 프레임에서도 실제 진행량의 4배를 유지한다', async ({ delta, normalSteps, fastSteps }) => {
+    const normal = new FakePhysics();
+    const fast = new FakePhysics();
+    const normalEngine = createEngine(normal);
+    const fastEngine = createEngine(fast);
+    await normalEngine.init();
+    await fastEngine.init();
+    fastEngine.setFastForward(true);
+
+    for (let frame = 0; frame < 1000; frame += 1) {
+      normalEngine.advance(delta);
+      fastEngine.advance(delta);
+    }
+
+    expect(normal.stepSeconds.length).toBeGreaterThanOrEqual(normalSteps - 1);
+    expect(normal.stepSeconds.length).toBeLessThanOrEqual(normalSteps);
+    expect(fast.stepSeconds.length).toBeGreaterThanOrEqual(fastSteps - 1);
+    expect(fast.stepSeconds.length).toBeLessThanOrEqual(fastSteps);
+    expect(new Set(fast.stepSeconds)).toEqual(new Set([0.01]));
   });
 
   it('음수와 비유한 frame delta를 accumulator에 반영하지 않는다', async () => {

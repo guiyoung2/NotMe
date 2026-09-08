@@ -7,6 +7,7 @@
 import Box2DFactory from 'box2d-wasm';
 import standardWasmUrl from 'box2d-wasm/dist/es/Box2D.wasm?url';
 import simdWasmUrl from 'box2d-wasm/dist/es/Box2D.simd.wasm?url';
+import type { RandomSource } from '../marbleConfig';
 
 import type {
   BodySnapshot,
@@ -50,6 +51,8 @@ function createBox2dModule(): Promise<Box2DModule> {
 }
 
 export class Box2dPhysics implements PhysicsAdapter {
+  constructor(private readonly random: RandomSource = () => Math.random()) {}
+
   private box2d: Box2DModule | null = null;
   private world: Box2D.b2World | null = null;
   private initPromise: Promise<void> | null = null;
@@ -166,7 +169,7 @@ export class Box2dPhysics implements PhysicsAdapter {
     if (!body) return;
 
     const { box2d } = this.requireWorld();
-    const impulse = new box2d.b2Vec2(Math.random() * 10 - 5, Math.random() * 10 - 5);
+    const impulse = new box2d.b2Vec2(this.random() * 10 - 5, this.random() * 10 - 5);
     body.ApplyLinearImpulseToCenter(impulse, true);
     box2d.destroy(impulse);
   }

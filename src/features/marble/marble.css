@@ -72,6 +72,13 @@
 
 .marble-participant__name input::placeholder { color: var(--color-muted); }
 
+.marble-participant__error {
+  display: block;
+  margin: 7px 0 0;
+  color: #ef8d6f;
+  line-height: 1.4;
+}
+
 .marble-stepper {
   display: grid;
   grid-template-columns: 44px minmax(52px, 1fr) 44px;
