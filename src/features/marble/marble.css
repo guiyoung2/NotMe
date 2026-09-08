@@ -1,0 +1,305 @@
+.marble-setup,
+.marble-race {
+  width: min(100%, 620px);
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.marble-setup__intro h2 {
+  margin-top: 0;
+  color: var(--color-text);
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  letter-spacing: -0.035em;
+}
+
+.marble-setup__intro p {
+  max-width: 36rem;
+  margin-top: 8px;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.marble-setup__participants {
+  margin: 28px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.marble-participant {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 172px auto;
+  align-items: end;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.marble-participant__name,
+.marble-participant__count {
+  min-width: 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.marble-participant__name input,
+.marble-stepper input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.marble-participant__name input::placeholder { color: var(--color-muted); }
+
+.marble-stepper {
+  display: grid;
+  grid-template-columns: 44px minmax(52px, 1fr) 44px;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.marble-stepper input {
+  margin-top: 0;
+  padding-inline: 4px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.marble-stepper button {
+  padding: 0;
+  font-size: 1.25rem;
+}
+
+.marble-setup button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.marble-part__remove { color: var(--color-muted); }
+
+.marble-setup__add {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.marble-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+  padding-block: 14px;
+  border-block: 1px solid var(--color-border);
+}
+
+.marble-total output {
+  color: var(--color-accent);
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.marble-total__error {
+  min-width: 0;
+  color: #ef8d6f;
+  overflow-wrap: anywhere;
+}
+
+.marble-options {
+  display: grid;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.marble-segmented {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.marble-segmented legend {
+  margin-bottom: 8px;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.marble-segmented > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-border);
+}
+
+.marble-segmented label { position: relative; min-width: 0; }
+.marble-segmented input { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; }
+
+.marble-segmented span {
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+  color: var(--color-muted);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.marble-segmented input:checked + span {
+  color: var(--color-bg);
+  background: var(--color-accent);
+  font-weight: 700;
+}
+
+.marble-segmented input:focus-visible + span {
+  outline: 3px solid var(--color-accent);
+  outline-offset: -3px;
+}
+
+.marble-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 60px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.marble-switch > span { min-width: 0; }
+.marble-switch strong,
+.marble-switch small { display: block; overflow-wrap: anywhere; }
+.marble-switch small { margin-top: 4px; color: var(--color-muted); line-height: 1.35; }
+
+.marble-switch input {
+  width: 50px;
+  min-width: 50px;
+  height: 30px;
+  min-height: 44px;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.marble-setup__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.marble-race__stage {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  height: clamp(360px, 62dvh, 680px);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #211b18;
+}
+
+.marble-race__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.marble-race__minimap {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 68px;
+  height: 150px;
+  border: 1px solid rgb(255 247 235 / 0.34);
+  border-radius: 6px;
+  background: #211b18;
+  pointer-events: none;
+}
+
+.marble-race__loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  color: var(--color-muted);
+  background: rgb(27 23 21 / 0.9);
+  text-align: center;
+}
+
+.marble-race__speed-guide {
+  margin-top: 10px;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.marble-race__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.marble-ranking { margin-top: 22px; }
+.marble-ranking h2 { margin: 0; }
+
+.marble-ranking ol {
+  margin: 10px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.marble-ranking li {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.marble-ranking li span { color: var(--color-muted); }
+.marble-ranking li strong { min-width: 0; overflow-wrap: anywhere; }
+
+.marble-race__abort {
+  width: 100%;
+  margin-block: 20px max(16px, env(safe-area-inset-bottom));
+}
+
+@media (max-width: 520px) {
+  .marble-participant {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .marble-participant__name { grid-column: 1 / -1; }
+  .marble-participant__count { min-width: 172px; }
+  .marble-part__remove { align-self: end; }
+}
+
+@media (max-width: 360px) {
+  .marble-participant { grid-template-columns: minmax(0, 1fr); }
+  .marble-participant__name,
+  .marble-participant__count { grid-column: 1; }
+  .marble-part__remove { width: 100%; }
+  .marble-total { align-items: flex-start; flex-direction: column; }
+  .marble-setup__actions { grid-template-columns: 1fr; }
+}
