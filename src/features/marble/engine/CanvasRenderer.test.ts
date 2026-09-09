@@ -15,6 +15,7 @@ type RecordedContext = {
   arcs: ArcCall[];
   fills: Array<{ arc: ArcCall | null; style: string }>;
   fillTexts: Array<[text: string, x: number, y: number, maxWidth?: number]>;
+  strokeTexts: Array<{ text: string; font: string; style: string; lineWidth: number }>;
   setTransform: ReturnType<typeof vi.fn>;
   translate: ReturnType<typeof vi.fn>;
   scale: ReturnType<typeof vi.fn>;
@@ -27,7 +28,6 @@ type RecordedContext = {
 function createContext(
   width: number,
   height: number,
-  measureWidth: (text: string) => number = (text) => text.length * 6,
 ): RecordedContext {
   let backingWidth = 300;
   let backingHeight = 150;
@@ -37,6 +37,7 @@ function createContext(
   const arcs: ArcCall[] = [];
   const fills: Array<{ arc: ArcCall | null; style: string }> = [];
   const fillTexts: Array<[string, number, number, number?]> = [];
+  const strokeTexts: RecordedContext['strokeTexts'] = [];
   const canvas = {
     get width() { return backingWidth; },
     set width(value: number) { backingWidth = value; widthWriteCount += 1; },
@@ -86,7 +87,9 @@ function createContext(
     fillText: vi.fn((text: string, x: number, y: number, maxWidth?: number) => {
       fillTexts.push([text, x, y, maxWidth]);
     }),
-    measureText: vi.fn((text: string) => ({ width: measureWidth(text) } as TextMetrics)),
+    strokeText: (text: string) => {
+      strokeTexts.push({ text, font: partial.font, style: partial.strokeStyle, lineWidth: partial.lineWidth });
+    },
   };
 
   return {
@@ -97,6 +100,7 @@ function createContext(
     arcs,
     fills,
     fillTexts,
+    strokeTexts,
     setTransform,
     translate,
     scale,
@@ -156,7 +160,9 @@ describe('CanvasRenderer', () => {
     const main = createContext(width, height);
     const minimap = createContext(68, 150);
     const camera = new Camera();
-    const renderer = new CanvasRenderer(NOTME_COURSE);
+    const renderer = new CanvasRenderer(NOTME_COURSE, [
+      createActive('a:0', 'a', '짱구', 0, 0), createActive('b:0', 'b', '철수', 0, 0),
+    ]);
     for (const y of [1, 60, 119.5]) {
       const snapshot = createSnapshot({ active: [
         createActive('a:0', 'a', '짱구', 0.3, y),
@@ -185,7 +191,7 @@ describe('CanvasRenderer', () => {
     vi.stubGlobal('devicePixelRatio', 2);
     const main = createContext(260, 240);
     const minimap = createContext(104, 240);
-    const renderer = new CanvasRenderer(NOTME_COURSE);
+    const renderer = new CanvasRenderer(NOTME_COURSE, []);
 
     renderer.render({ main: main.context, minimap: minimap.context }, createSnapshot(), cameraView);
     renderer.render({ main: main.context, minimap: minimap.context }, createSnapshot(), cameraView);
@@ -202,7 +208,7 @@ describe('CanvasRenderer', () => {
     ]);
   });
 
-  it('외벽·line·circle, snapshot angle 회전체, 활성 구슬, finish rank를 그린다', () => {
+  it('외벽·line·circle, snapshot angle 회전체, 활성 구슬을 그리고 Canvas에는 도착 순위를 쓰지 않는다', () => {
     const main = createContext(260, 240);
     const minimap = createContext(104, 240);
     const snapshot = createSnapshot({
@@ -218,7 +224,7 @@ describe('CanvasRenderer', () => {
       finishOrder: [{ id: 'a:0', participantId: 'a', name: '짱구', rank: 1 }],
     });
 
-    new CanvasRenderer(NOTME_COURSE).render(
+    new CanvasRenderer(NOTME_COURSE, snapshot.active).render(
       { main: main.context, minimap: minimap.context },
       snapshot,
       cameraView,
@@ -235,9 +241,29 @@ describe('CanvasRenderer', () => {
       [6, 42, 0.25],
       [8, 44, 0.25],
     ]);
-    expect(marbleFills[0].style).toBe(marbleFills[1].style);
+    expect(marbleFills[0].style).not.toBe(marbleFills[1].style);
     expect(marbleFills[2].style).not.toBe(marbleFills[0].style);
-    expect(main.fillTexts).toContainEqual(['1위 짱구 (a:0)', 12, 20, 236]);
+    expect(main.fillTexts.some(([text]) => text.includes('위') || text.includes('a:0'))).toBe(false);
+  });
+
+  it('초기 섞기 순서의 색은 다른 구슬이 도착하거나 active 순서가 바뀌어도 유지된다', () => {
+    const main = createContext(260, 240);
+    const minimap = createContext(104, 240);
+    const active = [
+      createActive('a:0', 'a', '짱구', 4, 40),
+      createActive('a:1', 'a', '짱구', 6, 42),
+      createActive('b:0', 'b', '철수', 8, 44),
+    ];
+    const renderer = new CanvasRenderer(NOTME_COURSE, [active[2], active[0], active[1]]);
+    renderer.render({ main: main.context, minimap: minimap.context }, createSnapshot({ active }), cameraView);
+    expect(main.fills.map(({ style }) => style)).toEqual([
+      'hsl(120 100% 70%)', 'hsl(240 100% 70%)', 'hsl(0 100% 70%)',
+    ]);
+    main.fills.length = 0;
+    minimap.fills.length = 0;
+    renderer.render({ main: main.context, minimap: minimap.context }, createSnapshot({ active: [active[2], active[1]] }), cameraView);
+    expect(main.fills.map(({ style }) => style)).toEqual(['hsl(0 100% 70%)', 'hsl(240 100% 70%)']);
+    expect(minimap.fills.map(({ style }) => style)).toEqual(['hsl(0 100% 70%)', 'hsl(240 100% 70%)']);
   });
 
   it('미니맵은 26x120 전체를 고정 비율로 fit하고 main camera와 독립적으로 viewport를 그린다', () => {
@@ -248,7 +274,7 @@ describe('CanvasRenderer', () => {
       active: [createActive('a:0', 'a', '짱구', 13, 66)],
     });
 
-    new CanvasRenderer(NOTME_COURSE).render(
+    new CanvasRenderer(NOTME_COURSE, snapshot.active).render(
       { main: main.context, minimap: minimap.context },
       snapshot,
       zoomedView,
@@ -268,7 +294,7 @@ describe('CanvasRenderer', () => {
       active: [createActive('a:0', 'a', '짱구', 13, 42)],
     }), NOTME_COURSE, { width: 260, height: 480 });
 
-    new CanvasRenderer(NOTME_COURSE).render(
+    new CanvasRenderer(NOTME_COURSE, []).render(
       { main: main.context, minimap: minimap.context },
       createSnapshot(),
       portraitView,
@@ -281,34 +307,39 @@ describe('CanvasRenderer', () => {
     ]);
   });
 
-  it('측정 폭이 구슬 label 영역보다 큰 긴 이름을 생략한다', () => {
-    const main = createContext(260, 240, () => 5);
-    const minimap = createContext(104, 240, () => 5);
+  it.each([1, 2])('zoom %s에서도 긴 전체 이름을 일정한 화면 크기와 어두운 외곽선으로 표시한다', (zoom) => {
+    const main = createContext(260, 240);
+    const minimap = createContext(104, 240);
 
-    new CanvasRenderer(NOTME_COURSE).render(
+    new CanvasRenderer(NOTME_COURSE, [createActive('a:0', 'a', '아주 긴 참가자 이름', 13, 66)]).render(
       { main: main.context, minimap: minimap.context },
       createSnapshot({ active: [createActive('a:0', 'a', '아주 긴 참가자 이름', 13, 66)] }),
-      { leftX: 6.5, width: 13, centerY: 66, topY: 60, height: 12, zoom: 2 },
+      { leftX: 0, width: 26 / zoom, centerY: 66, topY: 60, height: 24 / zoom, zoom },
     );
 
-    expect(main.fillTexts).toEqual([]);
+    expect(main.fillTexts).toEqual([['아주 긴 참가자 이름', 0, -4, undefined]]);
+    expect(main.strokeTexts).toEqual([{ text: '아주 긴 참가자 이름', font: '12px sans-serif', style: '#211b18', lineWidth: 3 }]);
+    expect(main.scale.mock.calls).toContainEqual([1 / (10 * zoom), 1 / (10 * zoom)]);
+    expect(minimap.fillTexts).toEqual([]);
   });
 
-  it('100개 active에서는 구슬 label을 생략하되 구슬은 모두 그린다', () => {
-    const main = createContext(260, 240, () => 0.1);
-    const minimap = createContext(104, 240, () => 0.1);
+  it('100개 active에서 화면 안의 25개 이름과 몸체만 그리고 미니맵에는 전체를 유지한다', () => {
+    const main = createContext(260, 240);
+    const minimap = createContext(104, 240);
     const active = Array.from({ length: 100 }, (_, index) => (
-      createActive(`a:${index}`, 'a', '짱구', 13, index + 1)
+      createActive(`a:${index}`, 'a', `참가자 ${index + 1}`, 13, index + 1)
     ));
 
-    new CanvasRenderer(NOTME_COURSE).render(
+    new CanvasRenderer(NOTME_COURSE, active).render(
       { main: main.context, minimap: minimap.context },
       createSnapshot({ active }),
       cameraView,
     );
 
-    expect(main.fills.filter(({ arc }) => arc?.[2] === 0.25)).toHaveLength(100);
-    expect(main.fillTexts).toEqual([]);
+    expect(main.fills.filter(({ arc }) => arc?.[2] === 0.25)).toHaveLength(25);
+    expect(main.fillTexts.map(([text]) => text)).toEqual(Array.from({ length: 25 }, (_, index) => `참가자 ${index + 30}`));
+    expect(minimap.fills.filter(({ arc }) => arc?.[2] === 0.25)).toHaveLength(100);
+    expect(new Set(minimap.fills.map(({ style }) => style)).size).toBe(100);
     expect(minimap.fillTexts).toEqual([]);
   });
 });

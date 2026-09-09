@@ -1,3 +1,5 @@
+import type { MarbleSeed } from '../marbleConfig';
+import { createMarbleColors } from '../marblePresentation';
 import type { CameraView } from './Camera';
 import type { ActiveMarble, RaceSnapshot } from './RouletteEngine';
 import type {
@@ -12,11 +14,7 @@ const COLORS = {
   course: '#efd5ae',
   accent: '#ef8d6f',
   viewport: '#fff3df',
-  rank: '#fff7eb',
 } as const;
-const MAX_MARBLE_LABELS = 24;
-const MAX_VISIBLE_RANKS = 8;
-const MIN_LABEL_DIAMETER = 8;
 const FULL_CIRCLE = Math.PI * 2;
 
 type CanvasSize = {
@@ -30,7 +28,11 @@ export type CanvasRenderTarget = {
 };
 
 export class CanvasRenderer {
-  constructor(private readonly course: CourseDefinition) {}
+  private readonly marbleColors: ReadonlyMap<string, string>;
+
+  constructor(private readonly course: CourseDefinition, shuffledMarbles: readonly MarbleSeed[]) {
+    this.marbleColors = createMarbleColors(shuffledMarbles);
+  }
 
   render(
     target: CanvasRenderTarget,
@@ -62,10 +64,8 @@ export class CanvasRenderer {
     context.scale(worldScale, worldScale);
     drawStaticCourse(context, this.course, 1 / worldScale);
     drawDynamicObstacles(context, snapshot.dynamicObstacles, 1 / worldScale);
-    drawMarbles(context, snapshot.active, worldScale, true);
+    drawMarbles(context, snapshot.active, worldScale, this.marbleColors, cameraView);
     context.restore();
-
-    drawFinishRanks(context, snapshot, size.width);
   }
 
   private renderMinimap(
@@ -89,7 +89,7 @@ export class CanvasRenderer {
     context.scale(scale, scale);
     drawStaticCourse(context, this.course, 1 / scale);
     drawDynamicObstacles(context, snapshot.dynamicObstacles, 1 / scale);
-    drawMarbles(context, snapshot.active, scale, false);
+    drawMarbles(context, snapshot.active, scale, this.marbleColors);
     context.strokeStyle = COLORS.viewport;
     context.lineWidth = 1.5 / scale;
     context.strokeRect(cameraView.leftX, cameraView.topY, cameraView.width, cameraView.height);
@@ -175,56 +175,36 @@ function drawMarbles(
   context: CanvasRenderingContext2D,
   marbles: readonly ActiveMarble[],
   worldScale: number,
-  drawLabels: boolean,
+  marbleColors: ReadonlyMap<string, string>,
+  cameraView?: CameraView,
 ): void {
-  const canDrawLabels = drawLabels && marbles.length <= MAX_MARBLE_LABELS;
-
   for (const marble of marbles) {
     const { body } = marble;
-    context.fillStyle = participantColor(marble.participantId);
+    if (cameraView && (
+      body.x + body.radius < cameraView.leftX
+      || body.x - body.radius > cameraView.leftX + cameraView.width
+      || body.y + body.radius < cameraView.topY
+      || body.y - body.radius > cameraView.topY + cameraView.height
+    )) continue;
+
+    context.fillStyle = marbleColors.get(marble.id)!;
     context.beginPath();
     context.arc(body.x, body.y, body.radius, 0, FULL_CIRCLE);
     context.fill();
 
-    const diameter = body.radius * 2 * worldScale;
-    if (!canDrawLabels || diameter < MIN_LABEL_DIAMETER) continue;
+    if (!cameraView) continue;
 
-    context.fillStyle = COLORS.rank;
-    context.font = `${12 / worldScale}px sans-serif`;
-    const labelMaxWidth = Math.max(36, diameter * 4) / worldScale;
-    if (context.measureText(marble.name).width > labelMaxWidth) continue;
-
+    context.save();
+    context.translate(body.x, body.y - body.radius);
+    // 카메라 배율을 상쇄해 전체 이름과 외곽선의 화면 크기를 유지한다.
+    context.scale(1 / worldScale, 1 / worldScale);
+    context.font = '12px sans-serif';
+    context.strokeStyle = COLORS.background;
+    context.lineWidth = 3;
     context.textAlign = 'center';
     context.textBaseline = 'bottom';
-    context.fillText(marble.name, body.x, body.y - body.radius, labelMaxWidth);
+    context.strokeText(marble.name, 0, -4);
+    context.fillText(marble.name, 0, -4);
+    context.restore();
   }
-}
-
-function drawFinishRanks(
-  context: CanvasRenderingContext2D,
-  snapshot: RaceSnapshot,
-  width: number,
-): void {
-  context.fillStyle = COLORS.rank;
-  context.font = '600 14px Pretendard, system-ui, sans-serif';
-  context.textAlign = 'left';
-  context.textBaseline = 'alphabetic';
-
-  for (const [index, marble] of snapshot.finishOrder.slice(0, MAX_VISIBLE_RANKS).entries()) {
-    context.fillText(
-      `${marble.rank}위 ${marble.name} (${marble.id})`,
-      12,
-      20 + index * 18,
-      Math.max(0, width - 24),
-    );
-  }
-}
-
-function participantColor(participantId: string): string {
-  let hash = 0;
-  for (let index = 0; index < participantId.length; index += 1) {
-    hash = Math.imul(hash, 31) + participantId.charCodeAt(index);
-  }
-  const hue = ((hash % 360) + 360) % 360;
-  return `hsl(${hue} 68% 58%)`;
 }

@@ -1,12 +1,14 @@
 import type { JSX } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { GameShell } from '../../app/GameShell';
 import { clearDraft, loadDraft, saveDraft } from '../../shared/draftStorage';
 import { MarbleRace } from './MarbleRace';
+import { MarbleResultCourse } from './MarbleResultCourse';
 import { MarbleSetup, type MarbleGameConfig } from './MarbleSetup';
 import { validateMarbleParticipants, type MarbleSeed } from './marbleConfig';
+import { createMarbleColors, marbleLabel } from './marblePresentation';
 import type { FinishedMarble, RaceSnapshot } from './engine/RouletteEngine';
 import './marble.css';
 
@@ -156,11 +158,6 @@ function isDefaultSetup(config: MarbleGameConfig | undefined): boolean {
   );
 }
 
-function marbleNumber(marble: MarbleSeed): number {
-  const separator = marble.id.lastIndexOf(':');
-  return Number(marble.id.slice(separator + 1)) + 1;
-}
-
 export function MarblePage(): JSX.Element {
   const navigate = useNavigate();
   const [page, setPage] = useState<MarblePageState>(restorePage);
@@ -291,15 +288,17 @@ type MarbleResultProps = {
 function MarbleResult({ config, finishOrder, onRestart }: MarbleResultProps): JSX.Element {
   const winner = config.winnerMode === 'first' ? finishOrder[0] : finishOrder.at(-1);
   const winnerParticipant = config.participants.find(({ id }) => id === winner?.participantId);
+  const colors = useMemo(() => createMarbleColors(config.shuffledMarbles), [config.shuffledMarbles]);
 
   return (
     <section className="marble-result">
+      <MarbleResultCourse config={config} finishOrder={finishOrder} />
       <header className="marble-result__selected">
         <p>{config.winnerMode === 'first' ? '첫 번째' : '마지막'} 도착 구슬</p>
         <h2>{winnerParticipant?.name} 님이 당첨됐어요</h2>
         {winner && (
           <strong className="marble-result__winner-marble">
-            {winner.name} {marbleNumber(winner)}번 구슬
+            {marbleLabel(winner)}
           </strong>
         )}
       </header>
@@ -308,7 +307,10 @@ function MarbleResult({ config, finishOrder, onRestart }: MarbleResultProps): JS
         {finishOrder.map((marble) => (
           <li className={marble.id === winner?.id ? 'marble-result__winner-row' : undefined} key={marble.id}>
             <span>{marble.rank}위</span>
-            <strong>{marble.name} {marbleNumber(marble)}번 구슬</strong>
+            <strong>
+              <i className="marble-color" style={{ backgroundColor: colors.get(marble.id) }} aria-hidden="true" />
+              {' '}{marbleLabel(marble)}
+            </strong>
           </li>
         ))}
       </ol>

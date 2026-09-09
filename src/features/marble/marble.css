@@ -237,7 +237,7 @@
 .marble-race__minimap {
   position: absolute;
   top: 10px;
-  right: 10px;
+  left: 10px;
   width: 68px;
   height: 150px;
   border: 1px solid rgb(255 247 235 / 0.34);
@@ -276,27 +276,50 @@
   border: 0;
 }
 
-.marble-ranking { margin-top: 22px; }
-.marble-ranking h2 { margin: 0; }
+.marble-arrivals {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: min(210px, 54%);
+  border: 1px solid rgb(255 247 235 / 0.18);
+  border-radius: 6px;
+  background: rgb(33 27 24 / 0.86);
+  font-size: 0.75rem;
+}
 
-.marble-ranking ol {
-  margin: 10px 0 0;
-  padding: 0;
-  border-top: 1px solid var(--color-border);
+.marble-arrivals__count {
+  margin: 0;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgb(255 247 235 / 0.18);
+  color: var(--color-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.marble-arrivals__list {
+  height: 126px;
+  margin: 0;
+  padding: 4px 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-anchor: none;
+  touch-action: pan-y;
+  scrollbar-width: thin;
   list-style: none;
 }
 
-.marble-ranking li {
+.marble-arrivals__list li {
   display: grid;
-  grid-template-columns: 74px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 8px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 7px;
   min-width: 0;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--color-border);
+  padding: 5px 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
-.marble-ranking li span { color: var(--color-muted); }
-.marble-ranking li strong { min-width: 0; overflow-wrap: anywhere; }
+.marble-color { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
 
 .marble-race__abort {
   width: 100%;
@@ -304,6 +327,7 @@
 }
 
 .marble-result__selected {
+  margin-top: 20px;
   padding: 28px 20px;
   border: 1px solid var(--color-accent);
   border-radius: 12px;
@@ -345,6 +369,7 @@
 
 .marble-result__ranking li span { color: var(--color-muted); }
 .marble-result__ranking li strong { min-width: 0; overflow-wrap: anywhere; }
+.marble-result__course .marble-race__canvas { touch-action: pan-y; }
 
 .marble-result__ranking .marble-result__winner-row {
   color: var(--color-accent);

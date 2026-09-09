@@ -74,7 +74,7 @@ afterEach(() => {
 });
 
 describe('MarbleRace 수명', () => {
-  it('매 frame의 예상 순위 변화는 발표하지 않고 도착만 즉시 한 번 알린다', async () => {
+  it('예상 순위는 표시하지 않고 실제 도착 명단과 진행 수만 즉시 갱신한다', async () => {
     const frames: FrameRequestCallback[] = [];
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => { frames.push(callback); return frames.length; });
     vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
@@ -84,7 +84,8 @@ describe('MarbleRace 수명', () => {
     await act(async () => Promise.resolve());
     const live = container.querySelector('[aria-live="polite"]')!;
     const initialAnnouncement = live.textContent;
-    const ranking = screen.getByRole('list', { name: '진행 순위' });
+    const ranking = screen.getByRole('list', { name: '도착 명단' });
+    expect(screen.getByLabelText('도착 진행')).toHaveTextContent('도착 0 / 2');
     const initialRanking = ranking.textContent;
     act(() => frames.shift()?.(0));
     snapshot = { ...snapshot, active: snapshot.active.map((marble, index) => ({ ...marble, body: { ...marble.body, y: index === 1 ? 30 : 20 } })) };
@@ -92,11 +93,16 @@ describe('MarbleRace 수명', () => {
     expect(live.textContent).toBe(initialAnnouncement);
     expect(ranking.textContent).toBe(initialRanking);
     act(() => frames.shift()?.(500));
-    expect(ranking.textContent).not.toBe(initialRanking);
+    expect(ranking.textContent).toBe(initialRanking);
+    expect(screen.queryByText(/예상/)).not.toBeInTheDocument();
     expect(live.textContent).toBe(initialAnnouncement);
 
     snapshot = { ...snapshot, active: snapshot.active.slice(0, 1), finishOrder: [{ ...config.shuffledMarbles[1], rank: 1 }] };
     act(() => frames.shift()?.(516));
+    expect(ranking).toHaveTextContent('1위 철수 1번 구슬');
+    expect(ranking).not.toHaveTextContent('짱구');
+    expect(ranking).not.toHaveTextContent('b:0');
+    expect(screen.getByLabelText('도착 진행')).toHaveTextContent('도착 1 / 2');
     expect(live).toHaveTextContent(/1위.*철수.*도착/);
     const announcedNode = live.firstChild;
     act(() => frames.shift()?.(532));
@@ -290,7 +296,7 @@ describe('MarbleRace 포인터 배속', () => {
     ]);
   });
 
-  it('진행 순위와 배속 안내, 미니맵, 중단 버튼을 제공한다', async () => {
+  it('맵 안에 도착 명단과 배속 안내, 미니맵, 중단 버튼을 제공한다', async () => {
     vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1);
     vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
     const onAbort = vi.fn();
@@ -299,7 +305,7 @@ describe('MarbleRace 포인터 배속', () => {
     await act(async () => Promise.resolve());
 
     expect(screen.getByText('누르고 있는 동안 4배속')).toBeInTheDocument();
-    expect(screen.getByRole('list', { name: '진행 순위' })).toHaveTextContent('짱구');
+    expect(screen.getByRole('list', { name: '도착 명단' }).closest('.marble-race__stage')).not.toBeNull();
     expect(screen.getByTestId('marble-minimap')).toHaveAccessibleName('전체 코스 미니맵');
     fireEvent.click(screen.getByRole('button', { name: '레이스 중단' }));
     expect(onAbort).toHaveBeenCalledOnce();

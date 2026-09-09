@@ -1,6 +1,6 @@
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 
 import { saveDraft } from '../../shared/draftStorage';
@@ -76,6 +76,10 @@ async function startConfiguredRace(user: ReturnType<typeof userEvent.setup>, win
   await user.click(screen.getByRole('button', { name: '레이스 시작' }));
 }
 
+beforeEach(() => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+});
+
 afterEach(() => {
   cleanup();
   localStorage.clear();
@@ -139,6 +143,32 @@ describe('isMarbleDraft', () => {
 });
 
 describe('MarblePage', () => {
+  it.each(['완주 직후', 'draft 복구'] as const)('%s에도 맵 → 도착 명단 → 당첨 결과를 표시하고 같은 구슬 색상을 유지한다', async (phase) => {
+    if (phase === '완주 직후') {
+      const user = userEvent.setup();
+      await startConfiguredRace(user);
+      await user.click(screen.getByRole('button', { name: '완주시키기' }));
+    } else {
+      saveDraft('marble', { phase: 'result', config, finishOrder: createFinishedSnapshot(config).finishOrder });
+      renderPage();
+    }
+    const map = screen.getByLabelText('마블 레이스 코스');
+    const arrivals = screen.getByRole('list', { name: '도착 명단' });
+    const winner = screen.getByRole('heading', { name: '짱구 님이 당첨됐어요' });
+    expect(map.compareDocumentPosition(arrivals) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(arrivals.compareDocumentPosition(winner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByLabelText('도착 진행')).toHaveTextContent('도착 3 / 3');
+    expect(arrivals).toHaveTextContent('1위 짱구 2번 구슬');
+    expect(document.body).not.toHaveTextContent(/a:0|a:1|b:0|_r_.*participant/);
+    const ranking = screen.getByRole('list', { name: '전체 도착 순위' });
+    const arrivalColors = Array.from(arrivals.querySelectorAll<HTMLElement>('.marble-color')).map((dot) => dot.style.backgroundColor);
+    const resultColors = Array.from(ranking.querySelectorAll<HTMLElement>('.marble-color')).map((dot) => dot.style.backgroundColor);
+    expect(new Set(arrivalColors).size).toBe(3);
+    expect(resultColors).toEqual(arrivalColors);
+    expect(screen.queryByRole('button', { name: '레이스 중단' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '다시 하기' })).toBeInTheDocument();
+  });
+
   it('설정부터 완주해 첫 번째 당첨자와 당첨 구슬, 전체 순위를 표시한다', async () => {
     const user = userEvent.setup();
     await startConfiguredRace(user);
@@ -232,7 +262,7 @@ describe('MarblePage', () => {
     renderPage();
 
     expect(screen.getByRole('heading', { name: '짱구 님이 당첨됐어요' })).toBeInTheDocument();
-    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    expect(within(screen.getByRole('list', { name: '전체 도착 순위' })).getAllByRole('listitem')).toHaveLength(3);
   });
 
   it('손상된 draft를 삭제하고 빈 설정으로 복구한다', () => {

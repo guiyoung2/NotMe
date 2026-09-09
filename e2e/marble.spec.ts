@@ -5,6 +5,27 @@ async function fillTwoParticipants(page: import('@playwright/test').Page) {
   await page.getByRole('textbox', { name: '참가자 2 이름' }).fill('철수');
 }
 
+async function expectResultCourse(page: import('@playwright/test').Page, total: number) {
+  const map = page.getByLabel('마블 레이스 코스');
+  await expect(map).toBeVisible();
+  await expect(page.getByLabel('도착 진행')).toHaveText(`도착 ${total} / ${total}`);
+  await expect(page.getByRole('list', { name: '도착 명단' }).getByRole('listitem')).toHaveCount(total);
+  const mapBounds = (await map.boundingBox())!;
+  const winnerBounds = (await page.locator('.marble-result__selected').boundingBox())!;
+  expect(mapBounds.y + mapBounds.height).toBeLessThan(winnerBounds.y);
+  expect(await map.evaluate((element) => {
+    const canvas = element as HTMLCanvasElement;
+    const pixels = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+    let coursePixels = 0;
+    for (let index = 0; index < pixels.length; index += 4) {
+      if (pixels[index] > 100 && pixels[index + 3] > 0) coursePixels++;
+    }
+    return coursePixels;
+  })).toBeGreaterThan(100);
+  await expect(page.locator('body')).not.toContainText(/_r_.*participant|위 예상/);
+  await expect(page.getByRole('button', { name: '다시 하기' })).toBeVisible();
+}
+
 test('빌드 설정에 따라 레이스 진단 전역의 노출을 제한한다', async ({ page }) => {
   await page.goto('/marble');
   await fillTwoParticipants(page);
@@ -26,6 +47,9 @@ test('세 구슬 설정으로 레이스를 시작하고 Canvas의 누르기 안�
   const canvas = page.getByLabel('마블 레이스 코스');
   await expect(canvas).toBeVisible();
   await expect(page.getByText('누르고 있는 동안 4배속')).toBeVisible();
+  await expect(page.getByLabel('도착 진행')).toHaveText('도착 0 / 3');
+  await expect(page.getByRole('list', { name: '도착 명단' })).toBeVisible();
+  await expect(page.getByText(/위 예상/)).toHaveCount(0);
   await expect(page.locator('.marble-race')).toHaveAttribute('aria-busy', 'false');
 
   await canvas.hover();
@@ -72,6 +96,7 @@ test('100개 구슬이 60초 안에 순위를 확정하고 frame p95가 32ms 이
   let lastFrameCount = 0;
   let missedFrames = 0;
   let completionMs = 0;
+  let sawArrivalProgress = false;
   try {
     await expect.poll(async () => {
       const snapshot = await page.evaluate(() => {
@@ -83,11 +108,13 @@ test('100개 구슬이 60초 안에 순위를 확정하고 frame p95가 32ms 이
           frameCount: debug.frameCount,
           frameDurationsMs: debug.frameDurationsMs,
           activeMarbles: debug.activeMarbles,
+          arrivalProgress: document.querySelector('[aria-label="도착 진행"]')?.textContent,
         } : null;
       });
       const elapsedMs = Date.now() - startedAt;
       progress.push({ elapsedMs, snapshot });
       if (snapshot) {
+        if (/^도착 ([1-9]|[1-9][0-9]) \/ 100$/.test(snapshot.arrivalProgress ?? '')) sawArrivalProgress = true;
         const newFrames = snapshot.frameCount - lastFrameCount;
         missedFrames += Math.max(0, newFrames - snapshot.frameDurationsMs.length);
         if (newFrames > 0) frameDurationsMs.push(...snapshot.frameDurationsMs.slice(-newFrames));
@@ -104,6 +131,7 @@ test('100개 구슬이 60초 안에 순위를 확정하고 frame p95가 32ms 이
     expect(missedFrames).toBe(0);
     expect(frameDurationsMs.length).toBeGreaterThan(120);
     expect(p95Ms).toBeLessThanOrEqual(32);
+    expect(sawArrivalProgress).toBe(true);
     expect(await page.evaluate(() => {
       const debug = window.__NOTME_RACE_DEBUG__!;
       return {
@@ -116,6 +144,14 @@ test('100개 구슬이 60초 안에 순위를 확정하고 frame p95가 32ms 이
     const ranks = page.getByRole('list', { name: '전체 도착 순위' }).getByRole('listitem');
     await expect(ranks).toHaveCount(100);
     await expect(ranks.last()).toContainText('100위');
+    await expectResultCourse(page, 100);
+    const arrivals = page.getByRole('list', { name: '도착 명단' });
+    await expect.poll(() => arrivals.evaluate((list) => list.scrollHeight - list.clientHeight - list.scrollTop)).toBeLessThan(1);
+    await arrivals.evaluate((list) => { list.scrollTop = 0; });
+    await expect.poll(() => arrivals.evaluate((list) => list.scrollTop)).toBe(0);
+    await expect.poll(() => arrivals.evaluate((list) => list.scrollHeight - list.clientHeight - list.scrollTop), { timeout: 3500 }).toBeLessThan(1);
+    await page.reload();
+    await expectResultCourse(page, 100);
   } finally {
     await page.mouse.up();
     await testInfo.attach('100-marbles-diagnostics', {
