@@ -402,6 +402,8 @@
 }
 
 @media (max-width: 520px) {
+  .marble-race__stage { padding-top: 180px; }
+
   .marble-participant {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;

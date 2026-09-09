@@ -5,9 +5,22 @@ async function fillTwoParticipants(page: import('@playwright/test').Page) {
   await page.getByRole('textbox', { name: '참가자 2 이름' }).fill('철수');
 }
 
+async function expectMobileHudAboveCourse(page: import('@playwright/test').Page) {
+  if (page.viewportSize()!.width > 520) return;
+  const canvas = (await page.getByLabel('마블 레이스 코스').boundingBox())!;
+  const arrivals = (await page.getByRole('region', { name: '확정 도착 순위' }).boundingBox())!;
+  const minimap = (await page.getByLabel('전체 코스 미니맵').boundingBox())!;
+  const stage = (await page.locator('.marble-race__stage').boundingBox())!;
+  expect(arrivals.y + arrivals.height + 8).toBeLessThanOrEqual(canvas.y);
+  expect(minimap.y + minimap.height + 8).toBeLessThanOrEqual(canvas.y);
+  expect(canvas.y + canvas.height).toBeLessThanOrEqual(stage.y + stage.height);
+  expect(canvas.height).toBeGreaterThan(170);
+}
+
 async function expectResultCourse(page: import('@playwright/test').Page, total: number) {
   const map = page.getByLabel('마블 레이스 코스');
   await expect(map).toBeVisible();
+  await expectMobileHudAboveCourse(page);
   await expect(page.getByLabel('도착 진행')).toHaveText(`도착 ${total} / ${total}`);
   await expect(page.getByRole('list', { name: '도착 명단' }).getByRole('listitem')).toHaveCount(total);
   const mapBounds = (await map.boundingBox())!;
@@ -88,6 +101,7 @@ test('100개 구슬이 60초 안에 순위를 확정하고 frame p95가 32ms 이
   await page.getByRole('button', { name: '레이스 시작' }).click();
   await expect(page.locator('.marble-race')).toHaveAttribute('aria-busy', 'false');
   const canvas = page.getByTestId('marble-canvas');
+  await expectMobileHudAboveCourse(page);
   await canvas.hover();
   await page.mouse.down();
 
