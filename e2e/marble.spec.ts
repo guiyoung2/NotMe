@@ -5,6 +5,16 @@ async function fillTwoParticipants(page: import('@playwright/test').Page) {
   await page.getByRole('textbox', { name: '참가자 2 이름' }).fill('철수');
 }
 
+test('빌드 설정에 따라 레이스 진단 전역의 노출을 제한한다', async ({ page }) => {
+  await page.goto('/marble');
+  await fillTwoParticipants(page);
+  await page.getByRole('button', { name: '레이스 시작' }).click();
+  await expect(page.locator('.marble-race')).toHaveAttribute('aria-busy', 'false');
+
+  const exposed = await page.evaluate(() => '__NOTME_RACE_DEBUG__' in window);
+  expect(exposed).toBe(process.env.NOTME_PRODUCTION_CHECK !== 'true');
+});
+
 test('세 구슬 설정으로 레이스를 시작하고 Canvas의 누르기 안내를 제공한다', async ({ page }) => {
   await page.goto('/marble');
   await fillTwoParticipants(page);
@@ -21,11 +31,98 @@ test('세 구슬 설정으로 레이스를 시작하고 Canvas의 누르기 안�
   await canvas.hover();
   await page.mouse.down();
   await expect.poll(() => canvas.evaluate((element) => element.hasPointerCapture(1))).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.__NOTME_RACE_DEBUG__?.speed)).toBe(4);
   await page.mouse.up();
   await expect.poll(() => canvas.evaluate((element) => element.hasPointerCapture(1))).toBe(false);
+  await expect.poll(() => page.evaluate(() => window.__NOTME_RACE_DEBUG__?.speed)).toBe(1);
+
+  await page.mouse.down();
+  await expect.poll(() => page.evaluate(() => window.__NOTME_RACE_DEBUG__?.speed)).toBe(4);
+  await canvas.dispatchEvent('pointercancel', { pointerId: 1, pointerType: 'mouse' });
+  await expect.poll(() => page.evaluate(() => window.__NOTME_RACE_DEBUG__?.speed)).toBe(1);
+  await page.mouse.up();
+
+  await page.mouse.down();
+  await expect.poll(() => page.evaluate(() => window.__NOTME_RACE_DEBUG__?.speed)).toBe(4);
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await expect.poll(() => page.evaluate(() => window.__NOTME_RACE_DEBUG__?.speed)).toBe(1);
+  await page.mouse.up();
 
   await page.getByRole('button', { name: '레이스 중단' }).click();
   await expect(page.getByRole('heading', { name: '참가자와 구슬 설정' })).toBeVisible();
+  expect(await page.evaluate(() => '__NOTME_RACE_DEBUG__' in window)).toBe(false);
+});
+
+test('100개 구슬이 60초 안에 순위를 확정하고 frame p95가 32ms 이하이다', async ({ page }, testInfo) => {
+  test.setTimeout(75_000);
+  await page.goto('/marble');
+  await fillTwoParticipants(page);
+  await page.getByRole('spinbutton', { name: '참가자 1 구슬 수' }).fill('50');
+  await page.getByRole('spinbutton', { name: '참가자 2 구슬 수' }).fill('50');
+
+  const startedAt = Date.now();
+  await page.getByRole('button', { name: '레이스 시작' }).click();
+  await expect(page.locator('.marble-race')).toHaveAttribute('aria-busy', 'false');
+  const canvas = page.getByTestId('marble-canvas');
+  await canvas.hover();
+  await page.mouse.down();
+
+  const frameDurationsMs: number[] = [];
+  const progress: unknown[] = [];
+  let lastFrameCount = 0;
+  let missedFrames = 0;
+  let completionMs = 0;
+  try {
+    await expect.poll(async () => {
+      const snapshot = await page.evaluate(() => {
+        const debug = window.__NOTME_RACE_DEBUG__;
+        return debug ? {
+          finishedCount: debug.finishedCount,
+          activeCount: debug.activeCount,
+          speed: debug.speed,
+          frameCount: debug.frameCount,
+          frameDurationsMs: debug.frameDurationsMs,
+          activeMarbles: debug.activeMarbles,
+        } : null;
+      });
+      const elapsedMs = Date.now() - startedAt;
+      progress.push({ elapsedMs, snapshot });
+      if (snapshot) {
+        const newFrames = snapshot.frameCount - lastFrameCount;
+        missedFrames += Math.max(0, newFrames - snapshot.frameDurationsMs.length);
+        if (newFrames > 0) frameDurationsMs.push(...snapshot.frameDurationsMs.slice(-newFrames));
+        lastFrameCount = snapshot.frameCount;
+        if (snapshot.finishedCount === 100) completionMs = elapsedMs;
+      }
+      return snapshot?.finishedCount ?? 0;
+    }, { timeout: 60_000, intervals: [250] }).toBe(100);
+
+    const sortedFrames = [...frameDurationsMs].sort((left, right) => left - right);
+    const p95Ms = sortedFrames[Math.ceil(sortedFrames.length * 0.95) - 1];
+    console.log(JSON.stringify({ project: testInfo.project.name, repeat: testInfo.repeatEachIndex + 1, completionMs, p95Ms, frames: sortedFrames.length, missedFrames }));
+    expect(completionMs).toBeLessThanOrEqual(60_000);
+    expect(missedFrames).toBe(0);
+    expect(frameDurationsMs.length).toBeGreaterThan(120);
+    expect(p95Ms).toBeLessThanOrEqual(32);
+    expect(await page.evaluate(() => {
+      const debug = window.__NOTME_RACE_DEBUG__!;
+      return {
+        activeCount: debug.activeCount,
+        retainedFrames: debug.frameDurationsMs.length,
+        readOnly: Object.isFrozen(debug) && Object.isFrozen(debug.frameDurationsMs) && Object.isFrozen(debug.activeMarbles),
+        writable: Reflect.set(debug, 'finishedCount', 0),
+      };
+    })).toEqual({ activeCount: 0, retainedFrames: 120, readOnly: true, writable: false });
+    const ranks = page.getByRole('list', { name: '전체 도착 순위' }).getByRole('listitem');
+    await expect(ranks).toHaveCount(100);
+    await expect(ranks.last()).toContainText('100위');
+  } finally {
+    await page.mouse.up();
+    await testInfo.attach('100-marbles-diagnostics', {
+      body: JSON.stringify({ completionMs, frameDurationsMs, missedFrames, progress }, null, 2),
+      contentType: 'application/json',
+    });
+  }
 });
 
 test('총 100개는 시작할 수 있고 101개는 안내와 비활성 시작 버튼을 표시한다', async ({ page }) => {

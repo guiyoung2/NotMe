@@ -84,6 +84,40 @@ export function MarbleRace({
     let lastTimestamp: number | null = null;
     let lastRankingTimestamp: number | null = null;
     let announcedFinishCount = 0;
+    let raceDebug: Window['__NOTME_RACE_DEBUG__'];
+    let recordDebug: (nextSnapshot: RaceSnapshot, deltaMs: number) => void;
+
+    if (import.meta.env.VITE_E2E === 'true') {
+      let debugSnapshot: RaceSnapshot | null = null;
+      let frameCount = 0;
+      const frameDurationsMs = new Array<number>(120);
+      raceDebug = Object.freeze({
+        get finishedCount() { return debugSnapshot?.finishOrder.length ?? 0; },
+        get activeCount() { return debugSnapshot?.active.length ?? 0; },
+        get speed() { return debugSnapshot?.speed ?? 1; },
+        get frameCount() { return frameCount; },
+        get frameDurationsMs() {
+          const cursor = frameCount % 120;
+          return Object.freeze(frameCount <= 120
+            ? frameDurationsMs.slice(0, frameCount)
+            : [...frameDurationsMs.slice(cursor), ...frameDurationsMs.slice(0, cursor)]);
+        },
+        get activeMarbles() {
+          return Object.freeze(debugSnapshot?.active.map(({ id, body }) => (
+            Object.freeze({ id, x: body.x, y: body.y })
+          )) ?? []);
+        },
+      });
+      Object.defineProperty(window, '__NOTME_RACE_DEBUG__', { value: raceDebug, configurable: true });
+      recordDebug = (nextSnapshot, deltaMs) => {
+        // 기존 스냅샷을 참조하고 프레임 간격만 고정 크기 버퍼에 기록한다.
+        debugSnapshot = nextSnapshot;
+        if (deltaMs > 0) {
+          frameDurationsMs[frameCount % 120] = deltaMs;
+          frameCount += 1;
+        }
+      };
+    }
 
     setLoading(true);
     setSnapshot(null);
@@ -122,6 +156,7 @@ export function MarbleRace({
             height: bounds.height || 1,
           });
           runtime.renderer.render(target, nextSnapshot, view);
+          if (import.meta.env.VITE_E2E === 'true') recordDebug(nextSnapshot, deltaMs);
           const hasArrivals = nextSnapshot.finishOrder.length > announcedFinishCount;
           if (hasArrivals) {
             setAnnouncement(nextSnapshot.finishOrder.slice(announcedFinishCount)
@@ -153,7 +188,9 @@ export function MarbleRace({
 
       void runtime.engine.init().then((initialized) => {
         if (!active || !initialized) return;
-        setSnapshot(runtime?.engine.snapshot() ?? null);
+        const initialSnapshot = runtime!.engine.snapshot();
+        setSnapshot(initialSnapshot);
+        if (import.meta.env.VITE_E2E === 'true') recordDebug(initialSnapshot, 0);
         setLoading(false);
         frameId = requestAnimationFrame(drawFrame);
       }).catch(reportError);
@@ -187,6 +224,9 @@ export function MarbleRace({
         }
       }
       if (engineRef.current === runtime?.engine) engineRef.current = null;
+      if (import.meta.env.VITE_E2E === 'true' && !finished && window.__NOTME_RACE_DEBUG__ === raceDebug) {
+        Reflect.deleteProperty(window, '__NOTME_RACE_DEBUG__');
+      }
     };
   }, [config, runtimeFactory]);
 

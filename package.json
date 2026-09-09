@@ -5,13 +5,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:e2e": "VITE_E2E=true npm run build",
     "preview": "vite preview",
-    "test": "vitest run --exclude e2e/**",
-    "test:watch": "vitest --exclude e2e/**",
+    "test": "vitest run --exclude 'e2e/**'",
+    "test:watch": "vitest --exclude 'e2e/**'",
     "test:e2e": "playwright test",
+    "test:production": "NOTME_PRODUCTION_CHECK=true playwright test e2e/marble.spec.ts --grep '빌드 설정'",
     "typecheck": "tsc -b",
     "lint": "tsc -b --pretty false",
-    "verify": "npm run lint && npm test && npm run build && npm run test:e2e"
+    "verify": "npm run lint && npm test && npm run build && npm run test:production && npm run build:e2e && npm run test:e2e -- --workers=1"
   },
   "dependencies": {
     "box2d-wasm": "^7.0.0",
