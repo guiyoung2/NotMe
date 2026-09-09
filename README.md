@@ -53,23 +53,6 @@ npm run preview
 배포 파일은 `dist/`에 생성됩니다. `verify`는 마지막에 E2E 진단용 빌드를 만들므로,
 산출물을 직접 배포할 때는 `npm run build`를 다시 실행합니다.
 
-## Vercel 직접 배포
-
-Vercel 대시보드에서 이 Git 저장소를 Import하고 다음 설정을 확인한 뒤 직접 배포합니다.
-이미 연결한 프로젝트도 같은 설정을 사용합니다.
-
-- Framework Preset: `Vite`
-- Root Directory: 저장소 루트
-- Build Command: `npm run build`
-- Output Directory: `dist`
-
-별도 API 키나 환경 변수는 필요하지 않습니다. 테스트 전용 `VITE_E2E`는 배포 환경에 설정하지 않습니다.
-
-`vercel.json`의 SPA rewrite가 `/stopwatch`, `/ladder`, `/marble` 같은
-경로의 직접 접속과 새로고침에도 `index.html`을 제공해 앱을 열어 줍니다.
-저장소의 빌드·검증 명령은 Vercel 계정 연결이나 실제 배포를 수행하지 않습니다.
-자세한 설정은 [Vercel의 Vite 배포 안내](https://vercel.com/docs/frameworks/frontend/vite)를 참고하세요.
-
 ## 홈 화면에 추가하고 오프라인으로 사용하기
 
 배포된 HTTPS 주소를 휴대폰 브라우저에서 연 뒤 설치합니다.
