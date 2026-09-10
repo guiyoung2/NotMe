@@ -83,23 +83,23 @@ describe('NOTME_COURSE', () => {
       Math.atan2(Math.abs(to.y - from.y), Math.abs(to.x - from.x)) * 180 / Math.PI
     ));
 
-    expect(goalWidth).toBeCloseTo(1.2, 5);
+    expect(goalWidth).toBeCloseTo(1.6, 5);
     expect(funnel).toHaveLength(2);
     for (const angle of funnelAngles) {
       expect(angle).toBeGreaterThanOrEqual(45);
-      expect(angle).toBeLessThanOrEqual(50);
+      expect(angle).toBeLessThanOrEqual(51);
     }
     expect(funnel).toEqual([
-      { kind: 'line', from: { x: 6.5, y: 119 }, to: { x: 12.4, y: 126 } },
-      { kind: 'line', from: { x: 19.5, y: 119 }, to: { x: 13.6, y: 126 } },
+      { kind: 'line', from: { x: 6.5, y: 119 }, to: { x: 12.2, y: 126 } },
+      { kind: 'line', from: { x: 19.5, y: 119 }, to: { x: 13.8, y: 126 } },
     ]);
     expect(lines).toEqual(expect.arrayContaining([
-      { kind: 'line', from: { x: 12.4, y: 126 }, to: { x: 12.4, y: 135 } },
-      { kind: 'line', from: { x: 13.6, y: 126 }, to: { x: 13.6, y: 135 } },
+      { kind: 'line', from: { x: 12.2, y: 126 }, to: { x: 12.2, y: 135 } },
+      { kind: 'line', from: { x: 13.8, y: 126 }, to: { x: 13.8, y: 135 } },
     ]));
     expect(NOTME_COURSE.goalSensor).toEqual({
-      from: { x: 12.4, y: 135 },
-      to: { x: 13.6, y: 135 },
+      from: { x: 12.2, y: 135 },
+      to: { x: 13.8, y: 135 },
     });
     expect(gate).toMatchObject({
       center: { x: 11.75, y: 125.2 },

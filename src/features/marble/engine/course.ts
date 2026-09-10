@@ -138,8 +138,8 @@ export const NOTME_COURSE: CourseDefinition = {
         { kind: 'line', from: { x: 26, y: 108 }, to: { x: 19.5, y: 116 } },
         { kind: 'line', from: { x: 6.5, y: 116 }, to: { x: 6.5, y: 119 } },
         { kind: 'line', from: { x: 19.5, y: 116 }, to: { x: 19.5, y: 119 } },
-        { kind: 'line', from: { x: 6.5, y: 119 }, to: { x: 12.4, y: 126 } },
-        { kind: 'line', from: { x: 19.5, y: 119 }, to: { x: 13.6, y: 126 } },
+        { kind: 'line', from: { x: 6.5, y: 119 }, to: { x: 12.2, y: 126 } },
+        { kind: 'line', from: { x: 19.5, y: 119 }, to: { x: 13.8, y: 126 } },
         {
           kind: 'spinner', id: 'spinner:finish-gate',
           center: { x: 11.75, y: 125.2 },
@@ -147,14 +147,14 @@ export const NOTME_COURSE: CourseDefinition = {
           angle: 0,
           angularVelocity: -1.2,
         },
-        { kind: 'line', from: { x: 12.4, y: 126 }, to: { x: 12.4, y: 135 } },
-        { kind: 'line', from: { x: 13.6, y: 126 }, to: { x: 13.6, y: 135 } },
+        { kind: 'line', from: { x: 12.2, y: 126 }, to: { x: 12.2, y: 135 } },
+        { kind: 'line', from: { x: 13.8, y: 126 }, to: { x: 13.8, y: 135 } },
       ],
     },
   ],
   goalSensor: {
-    from: { x: 12.4, y: 135 },
-    to: { x: 13.6, y: 135 },
+    from: { x: 12.2, y: 135 },
+    to: { x: 13.8, y: 135 },
   },
 };
 
