@@ -14,6 +14,7 @@ type RecordedContext = {
   heightWrites: () => number;
   arcs: ArcCall[];
   fills: Array<{ arc: ArcCall | null; style: string }>;
+  strokes: Array<{ arc: ArcCall | null; style: string; lineWidth: number; globalAlpha: number }>;
   fillTexts: Array<[text: string, x: number, y: number, maxWidth?: number]>;
   strokeTexts: Array<{ text: string; font: string; style: string; lineWidth: number }>;
   setTransform: ReturnType<typeof vi.fn>;
@@ -36,6 +37,7 @@ function createContext(
   let lastArc: ArcCall | null = null;
   const arcs: ArcCall[] = [];
   const fills: Array<{ arc: ArcCall | null; style: string }> = [];
+  const strokes: RecordedContext['strokes'] = [];
   const fillTexts: Array<[string, number, number, number?]> = [];
   const strokeTexts: RecordedContext['strokeTexts'] = [];
   const canvas = {
@@ -60,6 +62,7 @@ function createContext(
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
+    globalAlpha: 1,
     font: '',
     textAlign: 'start',
     textBaseline: 'alphabetic',
@@ -75,7 +78,14 @@ function createContext(
     closePath: vi.fn(),
     moveTo,
     lineTo,
-    stroke: vi.fn(),
+    stroke: vi.fn(() => {
+      strokes.push({
+        arc: lastArc,
+        style: String(partial.strokeStyle),
+        lineWidth: partial.lineWidth,
+        globalAlpha: partial.globalAlpha,
+      });
+    }),
     arc: vi.fn((...call: ArcCall) => {
       lastArc = call;
       arcs.push(call);
@@ -99,6 +109,7 @@ function createContext(
     heightWrites: () => heightWriteCount,
     arcs,
     fills,
+    strokes,
     fillTexts,
     strokeTexts,
     setTransform,
@@ -287,6 +298,39 @@ describe('CanvasRenderer', () => {
     expect(minimap.scale.mock.calls).toEqual([[2.5, 2.5]]);
     expect(minimap.strokeRect.mock.calls).toContainEqual([6.5, 60, 13, 12]);
     expect(minimap.arcs).toContainEqual([13, 66, 0.25, 0, Math.PI * 2]);
+  });
+
+  it('250ms 지난 스킬 충격파를 main과 미니맵에 확장·감쇠한 원으로 그린다', () => {
+    const main = createContext(260, 240);
+    const minimap = createContext(104, 240);
+    const snapshot = createSnapshot({
+      active: [createActive('a:0', 'a', '짱구', 13, 42)],
+      skillEffects: [{
+        id: 1,
+        center: { x: 13, y: 42 },
+        elapsedMs: 250,
+        durationMs: 500,
+      }],
+    });
+
+    new CanvasRenderer(NOTME_COURSE, snapshot.active).render(
+      { main: main.context, minimap: minimap.context },
+      snapshot,
+      cameraView,
+    );
+
+    expect(main.strokes.filter(({ style }) => style === '#7dd3fc')).toEqual([{
+      arc: [13, 42, 2.75, 0, Math.PI * 2],
+      style: '#7dd3fc',
+      lineWidth: 0.2,
+      globalAlpha: 0.75,
+    }]);
+    expect(minimap.strokes.filter(({ style }) => style === '#7dd3fc')).toEqual([{
+      arc: [13, 42, 2.75, 0, Math.PI * 2],
+      style: '#7dd3fc',
+      lineWidth: 1,
+      globalAlpha: 0.75,
+    }]);
   });
 
   it('세로 main 화면과 미니맵에 같은 실제 가시 범위를 표시한다', () => {

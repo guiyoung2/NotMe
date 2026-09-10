@@ -7,12 +7,14 @@ import type {
   CourseDefinition,
   DynamicObstacleSnapshot,
   LineObstacle,
+  SkillEffectSnapshot,
 } from './types';
 
 const COLORS = {
   background: '#211b18',
   course: '#efd5ae',
   accent: '#ef8d6f',
+  skillEffect: '#7dd3fc',
   viewport: '#fff3df',
 } as const;
 const FULL_CIRCLE = Math.PI * 2;
@@ -64,6 +66,7 @@ export class CanvasRenderer {
     context.scale(worldScale, worldScale);
     drawStaticCourse(context, this.course, 1 / worldScale);
     drawDynamicObstacles(context, snapshot.dynamicObstacles, 1 / worldScale);
+    drawSkillEffects(context, snapshot.skillEffects, 2 / worldScale);
     drawMarbles(context, snapshot.active, worldScale, this.marbleColors, cameraView);
     context.restore();
   }
@@ -89,6 +92,7 @@ export class CanvasRenderer {
     context.scale(scale, scale);
     drawStaticCourse(context, this.course, 1 / scale);
     drawDynamicObstacles(context, snapshot.dynamicObstacles, 1 / scale);
+    drawSkillEffects(context, snapshot.skillEffects, 2 / scale);
     drawMarbles(context, snapshot.active, scale, this.marbleColors);
     context.strokeStyle = COLORS.viewport;
     context.lineWidth = 1.5 / scale;
@@ -169,6 +173,32 @@ function drawDynamicObstacles(
     context.stroke();
     context.restore();
   }
+}
+
+function drawSkillEffects(
+  context: CanvasRenderingContext2D,
+  effects: readonly SkillEffectSnapshot[],
+  lineWidth: number,
+): void {
+  context.save();
+  context.strokeStyle = COLORS.skillEffect;
+  context.lineWidth = lineWidth;
+
+  for (const effect of effects) {
+    const progress = effect.elapsedMs / effect.durationMs;
+    context.globalAlpha = 1 - progress * progress;
+    context.beginPath();
+    context.arc(
+      effect.center.x,
+      effect.center.y,
+      0.5 + progress * 4.5,
+      0,
+      FULL_CIRCLE,
+    );
+    context.stroke();
+  }
+
+  context.restore();
 }
 
 function drawMarbles(
