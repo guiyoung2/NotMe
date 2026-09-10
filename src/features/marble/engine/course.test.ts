@@ -67,7 +67,7 @@ describe('NOTME_COURSE', () => {
     expect(spinners.filter(({ center }) => center.y > 76 && center.y < 112)).toHaveLength(2);
   });
 
-  it('짧고 완만한 깔때기와 입구를 가로막는 긴 게이트를 갖는다', () => {
+  it('연속된 결승 유도벽과 입구를 가로막는 긴 게이트를 갖는다', () => {
     const finish = NOTME_COURSE.sections.find(({ kind }) => kind === 'finish');
     if (!finish) throw new Error('결승 구간이 필요합니다.');
     const lines = finish.obstacles.filter(isLine);
@@ -78,28 +78,28 @@ describe('NOTME_COURSE', () => {
     if (!gate) throw new Error('결승 게이트가 필요합니다.');
 
     const goalWidth = Math.abs(NOTME_COURSE.goalSensor.to.x - NOTME_COURSE.goalSensor.from.x);
-    const funnel = lines.filter(({ from, to }) => Math.min(from.y, to.y) === 119);
+    const funnel = lines.filter(({ from, to }) => Math.min(from.y, to.y) === 116);
     const funnelAngles = funnel.map(({ from, to }) => (
       Math.atan2(Math.abs(to.y - from.y), Math.abs(to.x - from.x)) * 180 / Math.PI
     ));
 
-    expect(goalWidth).toBeCloseTo(1.6, 5);
+    expect(goalWidth).toBeCloseTo(1.2, 5);
     expect(funnel).toHaveLength(2);
     for (const angle of funnelAngles) {
-      expect(angle).toBeGreaterThanOrEqual(45);
-      expect(angle).toBeLessThanOrEqual(51);
+      expect(angle).toBeGreaterThanOrEqual(55);
+      expect(angle).toBeLessThanOrEqual(65);
     }
     expect(funnel).toEqual([
-      { kind: 'line', from: { x: 6.5, y: 119 }, to: { x: 12.2, y: 126 } },
-      { kind: 'line', from: { x: 19.5, y: 119 }, to: { x: 13.8, y: 126 } },
+      { kind: 'line', from: { x: 6.5, y: 116 }, to: { x: 12.4, y: 126 } },
+      { kind: 'line', from: { x: 19.5, y: 116 }, to: { x: 13.6, y: 126 } },
     ]);
     expect(lines).toEqual(expect.arrayContaining([
-      { kind: 'line', from: { x: 12.2, y: 126 }, to: { x: 12.2, y: 135 } },
-      { kind: 'line', from: { x: 13.8, y: 126 }, to: { x: 13.8, y: 135 } },
+      { kind: 'line', from: { x: 12.4, y: 126 }, to: { x: 12.4, y: 135 } },
+      { kind: 'line', from: { x: 13.6, y: 126 }, to: { x: 13.6, y: 135 } },
     ]));
     expect(NOTME_COURSE.goalSensor).toEqual({
-      from: { x: 12.2, y: 135 },
-      to: { x: 13.8, y: 135 },
+      from: { x: 12.4, y: 135 },
+      to: { x: 13.6, y: 135 },
     });
     expect(gate).toMatchObject({
       center: { x: 11.75, y: 125.2 },
