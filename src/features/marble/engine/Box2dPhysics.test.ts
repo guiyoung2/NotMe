@@ -243,6 +243,17 @@ describe('Box2dPhysics', () => {
     expect(physics.getMarble('far')!.x).toBeCloseTo(20, 5);
   });
 
+  it('가까운 구슬을 발동 구슬 반대 방향으로 10ms step 안에 밀어낸다', () => {
+    physics.createMarble({ id: 'source', x: 5, y: 1 });
+    physics.createMarble({ id: 'near', x: 6, y: 1 });
+
+    physics.impact('source');
+    physics.step(0.01);
+
+    expect(physics.getMarble('near')!.x).toBeGreaterThan(6);
+    expect(physics.getMarble('source')!.x).toBeCloseTo(5, 5);
+  });
+
   it('겹친 target에도 결정적인 최대 impact 방향을 적용한다', () => {
     physics.createMarble({ id: 'source', x: 5, y: 1 });
     physics.createMarble({ id: 'target', x: 5, y: 1 });

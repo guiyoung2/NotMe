@@ -16,6 +16,8 @@ function createSnapshot(
       body: { id, x: 13, y, angle: 0, radius: 0.25 },
     })),
     dynamicObstacles: [],
+    skillEffects: [],
+    skillActivationCount: 0,
     finishOrder: [],
     winner: null,
     winnerMode,

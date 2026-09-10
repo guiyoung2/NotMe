@@ -1,36 +1,22 @@
 import type { RandomSource } from '../marbleConfig';
-import type { PhysicsAdapter } from './types';
-
-const SKILL_COOLDOWN_MS = 5_000;
-const SKILL_TRIGGER_PROBABILITY = 0.02;
 
 export class SkillSystem {
-  private readonly elapsedById = new Map<string, number>();
+  private remainingMs: number | null = null;
 
   constructor(private readonly random: RandomSource) {}
 
-  register(ids: readonly string[]): void {
-    for (const id of ids) this.elapsedById.set(id, 0);
-  }
+  update(ids: readonly string[], elapsedMs: number): string | null {
+    if (ids.length === 0) return null;
+    this.remainingMs ??= 6_000 + this.random() * 2_000;
+    this.remainingMs -= elapsedMs;
+    if (this.remainingMs > 0) return null;
 
-  remove(id: string): void {
-    this.elapsedById.delete(id);
-  }
-
-  update(ids: readonly string[], elapsedMs: number, physics: PhysicsAdapter): void {
-    for (const id of ids) {
-      const elapsed = (this.elapsedById.get(id) ?? 0) + elapsedMs;
-      if (elapsed < SKILL_COOLDOWN_MS) {
-        this.elapsedById.set(id, elapsed);
-        continue;
-      }
-
-      this.elapsedById.set(id, elapsed - SKILL_COOLDOWN_MS);
-      if (this.random() < SKILL_TRIGGER_PROBABILITY) physics.impact(id);
-    }
+    const id = ids[Math.min(ids.length - 1, Math.floor(this.random() * ids.length))];
+    this.remainingMs = 6_000 + this.random() * 2_000;
+    return id;
   }
 
   clear(): void {
-    this.elapsedById.clear();
+    this.remainingMs = null;
   }
 }

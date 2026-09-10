@@ -1,7 +1,7 @@
 import type { MarbleSeed, RandomSource } from '../marbleConfig';
 import { NOTME_COURSE } from './course';
 import { SkillSystem } from './SkillSystem';
-import type { BodySnapshot, CoursePoint, DynamicObstacleSnapshot, PhysicsAdapter } from './types';
+import type { BodySnapshot, CoursePoint, DynamicObstacleSnapshot, PhysicsAdapter, SkillEffectSnapshot } from './types';
 
 const FIXED_STEP_MS = 10;
 const MAX_REAL_DELTA_MS = 100;
@@ -25,6 +25,8 @@ export type ActiveMarble = MarbleSeed & {
 export type RaceSnapshot = {
   active: ActiveMarble[];
   dynamicObstacles: DynamicObstacleSnapshot[];
+  skillEffects: SkillEffectSnapshot[];
+  skillActivationCount: number;
   finishOrder: FinishedMarble[];
   winner: FinishedMarble | null;
   winnerMode: WinnerMode;
@@ -58,6 +60,8 @@ export class RouletteEngine {
   private readonly stuckTrackers = new Map<string, StuckTracker>();
   private readonly startPositions = new Map<string, CoursePoint>();
   private readonly previousPositions = new Map<string, CoursePoint>();
+  private skillEffects: SkillEffectSnapshot[] = [];
+  private skillActivationCount = 0;
   private accumulatorMs = 0;
   private speed: 1 | 4 = 1;
   private initialized = false;
@@ -143,6 +147,8 @@ export class RouletteEngine {
     return {
       active,
       dynamicObstacles,
+      skillEffects: this.skillEffects.map((effect) => ({ ...effect, center: { ...effect.center } })),
+      skillActivationCount: this.skillActivationCount,
       finishOrder: this.finishOrder.map((marble) => ({ ...marble })),
       winner: winner ? { ...winner } : null,
       winnerMode: this.winnerMode,
@@ -160,6 +166,7 @@ export class RouletteEngine {
     this.previousPositions.clear();
     this.startPositions.clear();
     this.skillSystem.clear();
+    this.skillEffects = [];
     this.physics.destroy();
   }
 
@@ -178,7 +185,6 @@ export class RouletteEngine {
         this.previousPositions.set(marble.id, { ...position });
         this.stuckTrackers.set(marble.id, { ...position, elapsedMs: 0 });
       }
-      this.skillSystem.register(this.marbles.map(({ id }) => id));
       this.initialized = true;
       return true;
     } catch (error) {
@@ -188,6 +194,10 @@ export class RouletteEngine {
   }
 
   private processStep(): void {
+    this.skillEffects = this.skillEffects.filter((effect) => {
+      effect.elapsedMs += FIXED_STEP_MS;
+      return effect.elapsedMs < effect.durationMs;
+    });
     const activeBodies = new Map<string, BodySnapshot>();
     for (const marble of this.marbles) {
       if (!this.activeIds.has(marble.id)) continue;
@@ -227,7 +237,18 @@ export class RouletteEngine {
       .map(({ id }) => id)
       .filter((id) => this.activeIds.has(id));
     if (this.skillsEnabled) {
-      this.skillSystem.update(remainingIds, FIXED_STEP_MS, this.physics);
+      const id = this.skillSystem.update(remainingIds, FIXED_STEP_MS);
+      const body = id === null ? null : this.physics.getMarble(id);
+      if (body) {
+        this.skillActivationCount += 1;
+        this.skillEffects.push({
+          id: this.skillActivationCount,
+          center: { x: body.x, y: body.y },
+          elapsedMs: 0,
+          durationMs: 500,
+        });
+        this.physics.impact(body.id);
+      }
     }
     for (const id of remainingIds) {
       const body = activeBodies.get(id);
@@ -245,7 +266,6 @@ export class RouletteEngine {
     this.stuckTrackers.delete(id);
     this.previousPositions.delete(id);
     this.startPositions.delete(id);
-    this.skillSystem.remove(id);
     this.finishOrder.push({ ...seed, rank: this.finishOrder.length + 1 });
     this.physics.removeMarble(id);
   }

@@ -23,6 +23,8 @@ export function MarbleResultCourse({ config, finishOrder }: MarbleResultCoursePr
     // 완주·복구 모두 물리 body 없이 전체 코스를 정적으로 표시한다.
     const snapshot: RaceSnapshot = {
       active: [],
+      skillEffects: [],
+      skillActivationCount: 0,
       dynamicObstacles: NOTME_COURSE.sections.flatMap(({ obstacles }) => (
         obstacles.filter((obstacle) => obstacle.kind === 'spinner')
       )),

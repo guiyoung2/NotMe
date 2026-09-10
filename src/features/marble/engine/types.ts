@@ -58,6 +58,13 @@ export interface DynamicObstacleSnapshot {
   angle: number;
 }
 
+export interface SkillEffectSnapshot {
+  id: number;
+  center: CoursePoint;
+  elapsedMs: number;
+  durationMs: 500;
+}
+
 export interface PhysicsAdapter {
   init(): Promise<void>;
   createCourse(course: CourseDefinition): void;

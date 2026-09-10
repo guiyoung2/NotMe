@@ -57,7 +57,18 @@ async function runHundredMarbles(seed: number, skillsEnabled: boolean) {
     expect(escaped).toEqual([]);
     expect(engine.snapshot().finishOrder).toHaveLength(100);
     expect(engine.snapshot().active).toEqual([]);
-    return { finishOrder: engine.snapshot().finishOrder, simulatedMs: steps * 10 };
+    const snapshot = engine.snapshot();
+    if (skillsEnabled) {
+      expect(snapshot.skillActivationCount).toBeGreaterThan(0);
+    } else {
+      expect(snapshot.skillActivationCount).toBe(0);
+      expect(snapshot.skillEffects).toEqual([]);
+    }
+    return {
+      finishOrder: snapshot.finishOrder,
+      simulatedMs: steps * 10,
+      skillActivationCount: snapshot.skillActivationCount,
+    };
   } finally {
     engine.destroy();
   }

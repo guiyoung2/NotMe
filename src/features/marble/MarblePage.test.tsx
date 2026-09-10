@@ -45,6 +45,8 @@ function createFinishedSnapshot(gameConfig: MarbleGameConfig): RaceSnapshot {
   return {
     active: [],
     dynamicObstacles: [],
+    skillEffects: [],
+    skillActivationCount: 0,
     finishOrder,
     winner: gameConfig.winnerMode === 'first' ? finishOrder[0] : finishOrder.at(-1) ?? null,
     winnerMode: gameConfig.winnerMode,

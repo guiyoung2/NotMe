@@ -289,18 +289,90 @@ describe('RouletteEngine 고정 step과 배속', () => {
 });
 
 describe('RouletteEngine 스킬과 정체 해소', () => {
-  it('모든 active ID에 5초마다 같은 2% 확률을 적용한다', async () => {
+  it('6초 뒤 선택된 구슬 하나에 충격을 가하고 발동 전 위치와 누적 횟수를 기록한다', async () => {
     const physics = new FakePhysics();
-    const random = vi.fn<RandomSource>().mockReturnValue(0.019);
+    const values = [0, 0.5, 1, 0, 0];
+    const random = vi.fn<RandomSource>(() => values.shift()!);
+    physics.impact = (id) => {
+      physics.impacted.push(id);
+      physics.marbles.get(id)!.x = 20;
+    };
     const engine = createEngine(physics, { skillsEnabled: true, random });
     await engine.init();
 
-    advanceSteps(engine, 499);
     expect(random).not.toHaveBeenCalled();
+    advanceSteps(engine, 599);
+    expect(random).toHaveBeenCalledTimes(1);
+    expect(physics.impacted).toEqual([]);
     advanceSteps(engine, 1);
 
     expect(random).toHaveBeenCalledTimes(3);
-    expect(physics.impacted).toEqual(['b:0', 'a:0', 'c:0']);
+    expect(physics.impacted).toEqual(['a:0']);
+    expect(engine.snapshot().skillEffects).toEqual([
+      { id: 1, center: { x: 13, y: 1 }, elapsedMs: 0, durationMs: 500 },
+    ]);
+    expect(engine.snapshot().skillActivationCount).toBe(1);
+    advanceSteps(engine, 799);
+    expect(physics.impacted).toEqual(['a:0']);
+    advanceSteps(engine, 1);
+    expect(physics.impacted).toEqual(['a:0', 'b:0']);
+    expect(engine.snapshot().skillActivationCount).toBe(2);
+    expect(engine.snapshot().skillEffects).toEqual([
+      { id: 2, center: { x: 12.4, y: 1 }, elapsedMs: 0, durationMs: 500 },
+    ]);
+  });
+
+  it('효과는 499ms까지 남고 500ms에서 사라지며 snapshot 변경에 영향받지 않는다', async () => {
+    const physics = new FakePhysics();
+    const engine = createEngine(physics, { skillsEnabled: true, random: () => 0 });
+    await engine.init();
+    advanceSteps(engine, 600);
+    const snapshot = engine.snapshot();
+    snapshot.skillEffects[0].center.x = 999;
+    snapshot.skillEffects[0].elapsedMs = 999;
+
+    advanceSteps(engine, 49);
+    engine.advance(9);
+    expect(engine.snapshot().skillEffects).toEqual([
+      { id: 1, center: { x: 12.4, y: 1 }, elapsedMs: 490, durationMs: 500 },
+    ]);
+    engine.advance(1);
+    expect(engine.snapshot().skillEffects).toEqual([]);
+    expect(engine.snapshot().skillActivationCount).toBe(1);
+  });
+
+  it('4배속에서도 같은 시뮬레이션 6초와 효과 수명을 사용한다', async () => {
+    const physics = new FakePhysics();
+    const engine = createEngine(physics, { skillsEnabled: true, random: () => 0 });
+    await engine.init();
+    engine.setFastForward(true);
+
+    advanceSteps(engine, 149);
+    expect(physics.impacted).toEqual([]);
+    engine.advance(10);
+    expect(physics.impacted).toEqual(['b:0']);
+    expect(engine.snapshot().skillEffects[0].elapsedMs).toBe(0);
+    advanceSteps(engine, 12);
+    engine.advance(4);
+    expect(engine.snapshot().skillEffects[0].elapsedMs).toBe(490);
+    engine.advance(1);
+    expect(engine.snapshot().skillEffects).toEqual([]);
+  });
+
+  it('destroy는 효과를 비우고 이후 발동을 중지한다', async () => {
+    const physics = new FakePhysics();
+    const random = vi.fn<RandomSource>(() => 0);
+    const engine = createEngine(physics, { skillsEnabled: true, random });
+    await engine.init();
+    advanceSteps(engine, 600);
+    expect(engine.snapshot().skillEffects).toHaveLength(1);
+
+    engine.destroy();
+    advanceSteps(engine, 800);
+
+    expect(engine.snapshot().skillEffects).toEqual([]);
+    expect(random).toHaveBeenCalledTimes(3);
+    expect(physics.impacted).toEqual(['b:0']);
   });
 
   it('스킬을 끄면 RNG를 소비하지 않고 impact도 발생하지 않는다', async () => {
@@ -313,6 +385,8 @@ describe('RouletteEngine 스킬과 정체 해소', () => {
 
     expect(random).not.toHaveBeenCalled();
     expect(physics.impacted).toEqual([]);
+    expect(engine.snapshot().skillEffects).toEqual([]);
+    expect(engine.snapshot().skillActivationCount).toBe(0);
   });
 
   it('3초간 이동하지 않은 active 구슬을 흔든 뒤 tracker를 초기화한다', async () => {
@@ -332,15 +406,15 @@ describe('RouletteEngine 스킬과 정체 해소', () => {
   it('이미 도착한 ID에는 skill과 shake를 적용하지 않는다', async () => {
     const physics = new FakePhysics();
     physics.onStep = (step, current) => {
-      if (step === 1) current.marbles.get('b:0')!.y = NOTME_COURSE.goalY;
+      if (step === 600) current.marbles.get('b:0')!.y = NOTME_COURSE.goalY;
     };
     const engine = createEngine(physics, { skillsEnabled: true, random: () => 0 });
     await engine.init();
 
-    advanceSteps(engine, 500);
+    advanceSteps(engine, 600);
 
-    expect(physics.impacted).toEqual(['a:0', 'c:0']);
-    expect(physics.shaken).not.toContain('b:0');
+    expect(physics.impacted).toEqual(['a:0']);
+    expect(physics.shaken.filter((id) => id === 'b:0')).toHaveLength(1);
   });
 });
 
@@ -405,6 +479,8 @@ describe('RouletteEngine snapshot과 수명', () => {
     });
     expect(snapshot).toMatchObject({
       dynamicObstacles: physics.dynamicObstacles,
+      skillEffects: [],
+      skillActivationCount: 0,
       winnerMode: 'first',
       speed: 1,
       finishOrder: [],

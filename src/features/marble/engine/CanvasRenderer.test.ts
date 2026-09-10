@@ -130,6 +130,8 @@ function createSnapshot(overrides: Partial<RaceSnapshot> = {}): RaceSnapshot {
   return {
     active: [],
     dynamicObstacles: [],
+    skillEffects: [],
+    skillActivationCount: 0,
     finishOrder: [],
     winner: null,
     winnerMode: 'first',

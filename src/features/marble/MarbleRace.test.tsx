@@ -24,6 +24,8 @@ const runningSnapshot: RaceSnapshot = {
     { ...config.shuffledMarbles[1], body: { id: 'b:0', x: 12, y: 12, angle: 0, radius: 0.25 } },
   ],
   dynamicObstacles: [],
+  skillEffects: [],
+  skillActivationCount: 0,
   finishOrder: [],
   winner: null,
   winnerMode: 'first',
