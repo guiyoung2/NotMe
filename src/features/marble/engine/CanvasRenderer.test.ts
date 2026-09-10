@@ -250,8 +250,8 @@ describe('CanvasRenderer', () => {
 
     expect(main.moveTo.mock.calls).toContainEqual([0, 0]);
     expect(main.lineTo.mock.calls).toContainEqual([0, NOTME_COURSE.goalY]);
-    expect(main.arcs).toContainEqual([13, 41, 0.38, 0, Math.PI * 2]);
-    expect(main.rotate.mock.calls).toEqual([[0.75], [-0.25]]);
+    expect(main.arcs).toContainEqual([13, 39, 0.35, 0, Math.PI * 2]);
+    expect(main.rotate.mock.calls.slice(-2)).toEqual([[0.75], [-0.25]]);
 
     const marbleFills = main.fills.filter(({ arc }) => arc?.[2] === 0.25);
     expect(marbleFills.map(({ arc }) => arc?.slice(0, 3))).toEqual([

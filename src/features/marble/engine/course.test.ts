@@ -7,6 +7,7 @@ import type { CourseObstacle } from './types';
 
 type Line = Extract<CourseObstacle, { kind: 'line' }>;
 type Spinner = Extract<CourseObstacle, { kind: 'spinner' }>;
+type Box = Extract<CourseObstacle, { kind: 'box' }>;
 
 function isLine(obstacle: CourseObstacle): obstacle is Line {
   return obstacle.kind === 'line';
@@ -49,52 +50,64 @@ describe('NOTME_COURSE', () => {
     ]));
   });
 
-  it('촘촘한 핀과 같은 높이의 양방향 회전봉을 거쳐 중앙 깔때기로 골인한다', () => {
+  it('사각 범퍼와 높이별 회전봉이 혼합된 코스다', () => {
     const obstacles = NOTME_COURSE.sections.flatMap(({ obstacles }) => obstacles);
-    const pins = obstacles.filter(({ kind }) => kind === 'circle');
+    const circles = obstacles.filter(({ kind }) => kind === 'circle');
+    const boxes = obstacles.filter((obstacle): obstacle is Box => obstacle.kind === 'box');
     const spinners = obstacles.filter(isSpinner);
-    const goalLeft = Math.min(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
-    const goalRight = Math.max(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
+    const row = spinners.filter(({ id }) => id.startsWith('spinner:row-'));
 
-    const mixingSpinners = spinners.filter(({ id }) => id.startsWith('spinner:mix-'));
-
-    expect(pins.length).toBeGreaterThanOrEqual(28);
-    expect(Math.max(...pins.map((pin) => pin.kind === 'circle' ? pin.radius : 0))).toBeLessThanOrEqual(0.6);
-    expect(spinners.length).toBeGreaterThanOrEqual(7);
-    expect(mixingSpinners).toHaveLength(6);
-    expect(new Set(mixingSpinners.map(({ center }) => center.y))).toEqual(new Set([68]));
-    expect(spinners.some((spinner) => spinner.kind === 'spinner' && spinner.angularVelocity > 0)).toBe(true);
-    expect(spinners.some((spinner) => spinner.kind === 'spinner' && spinner.angularVelocity < 0)).toBe(true);
-    expect(goalRight - goalLeft).toBeGreaterThan(0.5);
-    expect(goalRight - goalLeft).toBeCloseTo(1.6, 5);
-    expect((goalLeft + goalRight) / 2).toBe(NOTME_COURSE.width / 2);
+    expect(circles.length).toBeLessThanOrEqual(5);
+    expect(boxes.length).toBeGreaterThanOrEqual(18);
+    expect(boxes.some(({ restitution }) => restitution >= 0.7)).toBe(true);
+    expect(spinners).toHaveLength(10);
+    expect(spinners.filter(({ center }) => center.y < 30)).toHaveLength(2);
+    expect(row).toHaveLength(5);
+    expect(new Set(row.map(({ center }) => center.y))).toEqual(new Set([68]));
+    expect(spinners.filter(({ center }) => center.y > 76 && center.y < 112)).toHaveLength(2);
   });
 
-  it('긴 완만한 깔때기와 출구보다 긴 느린 회전봉 뒤의 세로 통로에서 골인한다', () => {
-    const fork = NOTME_COURSE.sections.find(({ kind }) => kind === 'fork');
+  it('짧고 완만한 깔때기와 입구를 가로막는 긴 게이트를 갖는다', () => {
     const finish = NOTME_COURSE.sections.find(({ kind }) => kind === 'finish');
-    if (!fork || !finish) throw new Error('분기와 골인 구간이 필요합니다.');
+    if (!finish) throw new Error('결승 구간이 필요합니다.');
+    const lines = finish.obstacles.filter(isLine);
+    const gate = finish.obstacles.find(
+      (obstacle): obstacle is Spinner => obstacle.kind === 'spinner'
+        && obstacle.id === 'spinner:finish-gate',
+    );
+    if (!gate) throw new Error('결승 게이트가 필요합니다.');
 
-    const forkLines = fork.obstacles.filter(isLine);
-    const finishLines = finish.obstacles.filter(isLine);
-    const finishSpinner = finish.obstacles.find(isSpinner);
-    if (!finishSpinner) throw new Error('골인 회전봉이 필요합니다.');
-
-    const goalLeft = Math.min(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
-    const goalRight = Math.max(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
-    const goalWidth = goalRight - goalLeft;
-    const chuteWalls = finishLines.filter(({ from, to }) => (
-      from.x === to.x
-      && (from.x === goalLeft || from.x === goalRight)
-      && Math.max(from.y, to.y) === NOTME_COURSE.goalY
+    const goalWidth = Math.abs(NOTME_COURSE.goalSensor.to.x - NOTME_COURSE.goalSensor.from.x);
+    const funnel = lines.filter(({ from, to }) => Math.min(from.y, to.y) === 119);
+    const funnelAngles = funnel.map(({ from, to }) => (
+      Math.atan2(Math.abs(to.y - from.y), Math.abs(to.x - from.x)) * 180 / Math.PI
     ));
 
-    expect(forkLines.every(({ from, to }) => Math.hypot(to.x - from.x, to.y - from.y) <= 6)).toBe(true);
-    expect(finishLines.some(({ from, to }) => Math.abs(to.y - from.y) >= 18)).toBe(true);
-    expect(finishSpinner.length).toBeGreaterThan(goalWidth);
-    expect(Math.abs(finishSpinner.angularVelocity)).toBeLessThanOrEqual(1.6);
-    expect(chuteWalls).toHaveLength(2);
-    expect(Math.min(...chuteWalls.map(({ from, to }) => Math.min(from.y, to.y)))).toBeLessThanOrEqual(129);
+    expect(goalWidth).toBeCloseTo(1.2, 5);
+    expect(funnel).toHaveLength(2);
+    for (const angle of funnelAngles) {
+      expect(angle).toBeGreaterThanOrEqual(45);
+      expect(angle).toBeLessThanOrEqual(50);
+    }
+    expect(funnel).toEqual([
+      { kind: 'line', from: { x: 6.5, y: 119 }, to: { x: 12.4, y: 126 } },
+      { kind: 'line', from: { x: 19.5, y: 119 }, to: { x: 13.6, y: 126 } },
+    ]);
+    expect(lines).toEqual(expect.arrayContaining([
+      { kind: 'line', from: { x: 12.4, y: 126 }, to: { x: 12.4, y: 135 } },
+      { kind: 'line', from: { x: 13.6, y: 126 }, to: { x: 13.6, y: 135 } },
+    ]));
+    expect(NOTME_COURSE.goalSensor).toEqual({
+      from: { x: 12.4, y: 135 },
+      to: { x: 13.6, y: 135 },
+    });
+    expect(gate).toMatchObject({
+      center: { x: 11.75, y: 125.2 },
+      length: 5.5,
+      angle: 0,
+      angularVelocity: -1.2,
+    });
+    expect(gate.length).toBeGreaterThan(goalWidth * 4);
   });
 
   it('모든 벽과 장애물의 물리 형상이 코스 경계 안에 있다', () => {
