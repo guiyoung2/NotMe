@@ -78,7 +78,7 @@ describe('NOTME_COURSE', () => {
     if (!gate) throw new Error('결승 게이트가 필요합니다.');
 
     const goalWidth = Math.abs(NOTME_COURSE.goalSensor.to.x - NOTME_COURSE.goalSensor.from.x);
-    const funnel = lines.filter(({ from, to }) => Math.min(from.y, to.y) === 116);
+    const funnel = lines.filter(({ from, to }) => Math.min(from.y, to.y) === 119);
     const funnelAngles = funnel.map(({ from, to }) => (
       Math.atan2(Math.abs(to.y - from.y), Math.abs(to.x - from.x)) * 180 / Math.PI
     ));
@@ -86,14 +86,16 @@ describe('NOTME_COURSE', () => {
     expect(goalWidth).toBeCloseTo(1.2, 5);
     expect(funnel).toHaveLength(2);
     for (const angle of funnelAngles) {
-      expect(angle).toBeGreaterThanOrEqual(55);
-      expect(angle).toBeLessThanOrEqual(65);
+      expect(angle).toBeGreaterThanOrEqual(45);
+      expect(angle).toBeLessThanOrEqual(50);
     }
     expect(funnel).toEqual([
-      { kind: 'line', from: { x: 6.5, y: 116 }, to: { x: 12.4, y: 126 } },
-      { kind: 'line', from: { x: 19.5, y: 116 }, to: { x: 13.6, y: 126 } },
+      { kind: 'line', from: { x: 6.5, y: 119 }, to: { x: 12.4, y: 126 } },
+      { kind: 'line', from: { x: 19.5, y: 119 }, to: { x: 13.6, y: 126 } },
     ]);
     expect(lines).toEqual(expect.arrayContaining([
+      { kind: 'line', from: { x: 6.5, y: 116 }, to: { x: 6.5, y: 119 } },
+      { kind: 'line', from: { x: 19.5, y: 116 }, to: { x: 19.5, y: 119 } },
       { kind: 'line', from: { x: 12.4, y: 126 }, to: { x: 12.4, y: 135 } },
       { kind: 'line', from: { x: 13.6, y: 126 }, to: { x: 13.6, y: 135 } },
     ]));
@@ -105,7 +107,7 @@ describe('NOTME_COURSE', () => {
       center: { x: 11.75, y: 125.2 },
       length: 5.5,
       angle: 0,
-      angularVelocity: -1.2,
+      angularVelocity: 1.2,
     });
     expect(gate.length).toBeGreaterThan(goalWidth * 4);
   });
