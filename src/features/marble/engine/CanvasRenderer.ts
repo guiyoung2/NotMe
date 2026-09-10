@@ -3,6 +3,7 @@ import { createMarbleColors } from '../marblePresentation';
 import type { CameraView } from './Camera';
 import type { ActiveMarble, RaceSnapshot } from './RouletteEngine';
 import type {
+  BoxObstacle,
   CircleObstacle,
   CourseDefinition,
   DynamicObstacleSnapshot,
@@ -132,8 +133,15 @@ function drawStaticCourse(
   for (const wall of course.walls) drawLine(context, wall);
   for (const section of course.sections) {
     for (const obstacle of section.obstacles) {
-      if (obstacle.kind === 'line') drawLine(context, obstacle);
-      if (obstacle.kind === 'circle') drawCircle(context, obstacle);
+      if (obstacle.kind === 'box') drawBox(context, obstacle);
+      if (obstacle.kind === 'line') {
+        context.strokeStyle = COLORS.course;
+        drawLine(context, obstacle);
+      }
+      if (obstacle.kind === 'circle') {
+        context.strokeStyle = COLORS.course;
+        drawCircle(context, obstacle);
+      }
       // spinner는 물리 snapshot angle로만 그려 정적 초기 angle과 중복하지 않는다.
     }
   }
@@ -153,6 +161,15 @@ function drawCircle(context: CanvasRenderingContext2D, circle: CircleObstacle): 
   context.beginPath();
   context.arc(circle.center.x, circle.center.y, circle.radius, 0, FULL_CIRCLE);
   context.stroke();
+}
+
+function drawBox(context: CanvasRenderingContext2D, box: BoxObstacle): void {
+  context.save();
+  context.translate(box.center.x, box.center.y);
+  context.rotate(box.angle);
+  context.strokeStyle = box.restitution >= 0.5 ? COLORS.accent : COLORS.course;
+  context.strokeRect(-box.width / 2, -box.height / 2, box.width, box.height);
+  context.restore();
 }
 
 function drawDynamicObstacles(

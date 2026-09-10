@@ -24,6 +24,7 @@ type RecordedContext = {
   moveTo: ReturnType<typeof vi.fn>;
   lineTo: ReturnType<typeof vi.fn>;
   strokeRect: ReturnType<typeof vi.fn>;
+  strokeRects: Array<{ rect: [number, number, number, number]; style: string }>;
 };
 
 function createContext(
@@ -56,7 +57,10 @@ function createContext(
   const rotate = vi.fn();
   const moveTo = vi.fn();
   const lineTo = vi.fn();
-  const strokeRect = vi.fn();
+  const strokeRects: RecordedContext['strokeRects'] = [];
+  const strokeRect = vi.fn((...rect: [number, number, number, number]) => {
+    strokeRects.push({ rect, style: String(partial.strokeStyle) });
+  });
   const partial = {
     canvas,
     fillStyle: '',
@@ -119,6 +123,7 @@ function createContext(
     moveTo,
     lineTo,
     strokeRect,
+    strokeRects,
   };
 }
 
@@ -257,6 +262,28 @@ describe('CanvasRenderer', () => {
     expect(marbleFills[0].style).not.toBe(marbleFills[1].style);
     expect(marbleFills[2].style).not.toBe(marbleFills[0].style);
     expect(main.fillTexts.some(([text]) => text.includes('위') || text.includes('a:0'))).toBe(false);
+  });
+
+  it('회전 box를 반발력에 따라 코스색과 accent색으로 그린다', () => {
+    const course = structuredClone(NOTME_COURSE);
+    course.sections[1].obstacles.push(
+      { kind: 'box', center: { x: 8, y: 40 }, width: 2, height: 0.4, angle: 0.25, restitution: 0 },
+      { kind: 'box', center: { x: 18, y: 40 }, width: 1, height: 1, angle: Math.PI / 4, restitution: 0.8 },
+    );
+    const main = createContext(260, 240);
+    const minimap = createContext(104, 240);
+
+    new CanvasRenderer(course, []).render(
+      { main: main.context, minimap: minimap.context }, createSnapshot(), cameraView,
+    );
+
+    expect(main.translate.mock.calls).toContainEqual([8, 40]);
+    expect(main.translate.mock.calls).toContainEqual([18, 40]);
+    expect(main.rotate.mock.calls).toEqual(expect.arrayContaining([[0.25], [Math.PI / 4]]));
+    expect(main.strokeRects).toEqual(expect.arrayContaining([
+      { rect: [-1, -0.2, 2, 0.4], style: '#efd5ae' },
+      { rect: [-0.5, -0.5, 1, 1], style: '#ef8d6f' },
+    ]));
   });
 
   it('초기 섞기 순서의 색은 다른 구슬이 도착하거나 active 순서가 바뀌어도 유지된다', () => {
