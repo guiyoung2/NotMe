@@ -86,6 +86,7 @@ const seeds: MarbleSeed[] = [
   { id: 'a:0', participantId: 'a', name: '짱구' },
   { id: 'c:0', participantId: 'c', name: '유리' },
 ];
+const GOAL_CENTER_X = (NOTME_COURSE.goalSensor.from.x + NOTME_COURSE.goalSensor.to.x) / 2;
 
 function createEngine(
   physics: PhysicsAdapter,
@@ -119,9 +120,9 @@ describe('RouletteEngine 순위', () => {
   it('이미 도착한 구슬을 중복 기록하지 않고 마지막 구슬도 골인할 때까지 기다린다', async () => {
     const physics = new FakePhysics();
     physics.onStep = (step, current) => {
-      if (step === 1) current.marbles.get('b:0')!.y = NOTME_COURSE.goalY;
-      if (step === 2) current.marbles.get('a:0')!.y = NOTME_COURSE.goalY + 1;
-      if (step === 3) current.marbles.get('c:0')!.y = NOTME_COURSE.goalY;
+      if (step === 1) Object.assign(current.marbles.get('b:0')!, { x: GOAL_CENTER_X, y: NOTME_COURSE.goalY });
+      if (step === 2) Object.assign(current.marbles.get('a:0')!, { x: GOAL_CENTER_X, y: NOTME_COURSE.goalY + 1 });
+      if (step === 3) Object.assign(current.marbles.get('c:0')!, { x: GOAL_CENTER_X, y: NOTME_COURSE.goalY });
     };
     const engine = createEngine(physics);
     await engine.init();
@@ -144,8 +145,8 @@ describe('RouletteEngine 순위', () => {
   it('같은 y를 교차해도 중앙 센서를 지난 구슬만 골인한다', async () => {
     const physics = new FakePhysics();
     physics.onStep = (step, current) => {
-      const y = step === 1 ? 119 : 121;
-      Object.assign(current.marbles.get('b:0')!, { x: 13, y });
+      const y = step === 1 ? NOTME_COURSE.goalY - 1 : NOTME_COURSE.goalY + 1;
+      Object.assign(current.marbles.get('b:0')!, { x: GOAL_CENTER_X, y });
       Object.assign(current.marbles.get('a:0')!, { x: 5, y });
       Object.assign(current.marbles.get('c:0')!, { x: 21, y });
     };
@@ -164,9 +165,9 @@ describe('RouletteEngine 순위', () => {
   it('전체 순위가 확정된 뒤에만 first 당첨자를 공개한다', async () => {
     const physics = new FakePhysics();
     physics.onStep = (step, current) => {
-      if (step === 1) current.marbles.get('b:0')!.y = NOTME_COURSE.goalY;
-      if (step === 2) current.marbles.get('a:0')!.y = NOTME_COURSE.goalY;
-      if (step === 3) current.marbles.get('c:0')!.y = NOTME_COURSE.goalY;
+      if (step === 1) Object.assign(current.marbles.get('b:0')!, { x: GOAL_CENTER_X, y: NOTME_COURSE.goalY });
+      if (step === 2) Object.assign(current.marbles.get('a:0')!, { x: GOAL_CENTER_X, y: NOTME_COURSE.goalY });
+      if (step === 3) Object.assign(current.marbles.get('c:0')!, { x: GOAL_CENTER_X, y: NOTME_COURSE.goalY });
     };
     const engine = createEngine(physics, { winnerMode: 'first' });
     await engine.init();
@@ -179,7 +180,10 @@ describe('RouletteEngine 순위', () => {
   });
 
   it.each([
-    { x: -1, y: 121 }, { x: 27, y: 121 }, { x: 13, y: -1 }, { x: 0.1, y: 121 },
+    { x: -1, y: NOTME_COURSE.goalY + 1 },
+    { x: NOTME_COURSE.width + 1, y: NOTME_COURSE.goalY + 1 },
+    { x: GOAL_CENTER_X, y: -1 },
+    { x: 0.1, y: NOTME_COURSE.goalY + 1 },
   ])('코스 밖 또는 골인 폭 밖 위치 ($x, $y)는 기록하지 않고 원래 시작 위치로 복구한다', async (position) => {
     const physics = new FakePhysics();
     const engine = createEngine(physics);
@@ -200,7 +204,9 @@ describe('RouletteEngine 순위', () => {
   it('같은 step의 동시 도착을 전달된 shuffled seed 순서로 확정한다', async () => {
     const physics = new FakePhysics();
     physics.onStep = (_step, current) => {
-      for (const marble of current.marbles.values()) marble.y = NOTME_COURSE.goalY;
+      for (const marble of current.marbles.values()) {
+        Object.assign(marble, { x: GOAL_CENTER_X, y: NOTME_COURSE.goalY });
+      }
     };
     const engine = createEngine(physics);
     await engine.init();
@@ -406,7 +412,9 @@ describe('RouletteEngine 스킬과 정체 해소', () => {
   it('이미 도착한 ID에는 skill과 shake를 적용하지 않는다', async () => {
     const physics = new FakePhysics();
     physics.onStep = (step, current) => {
-      if (step === 600) current.marbles.get('b:0')!.y = NOTME_COURSE.goalY;
+      if (step === 600) {
+        Object.assign(current.marbles.get('b:0')!, { x: GOAL_CENTER_X, y: NOTME_COURSE.goalY });
+      }
     };
     const engine = createEngine(physics, { skillsEnabled: true, random: () => 0 });
     await engine.init();

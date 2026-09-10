@@ -244,8 +244,8 @@ describe('CanvasRenderer', () => {
     );
 
     expect(main.moveTo.mock.calls).toContainEqual([0, 0]);
-    expect(main.lineTo.mock.calls).toContainEqual([0, 120]);
-    expect(main.arcs).toContainEqual([13, 45, 0.5, 0, Math.PI * 2]);
+    expect(main.lineTo.mock.calls).toContainEqual([0, NOTME_COURSE.goalY]);
+    expect(main.arcs).toContainEqual([13, 41, 0.38, 0, Math.PI * 2]);
     expect(main.rotate.mock.calls).toEqual([[0.75], [-0.25]]);
 
     const marbleFills = main.fills.filter(({ arc }) => arc?.[2] === 0.25);
@@ -279,7 +279,7 @@ describe('CanvasRenderer', () => {
     expect(minimap.fills.map(({ style }) => style)).toEqual(['hsl(0 100% 70%)', 'hsl(240 100% 70%)']);
   });
 
-  it('미니맵은 26x120 전체를 고정 비율로 fit하고 main camera와 독립적으로 viewport를 그린다', () => {
+  it('미니맵은 26x135 전체를 고정 비율로 fit하고 main camera와 독립적으로 viewport를 그린다', () => {
     const main = createContext(260, 240);
     const minimap = createContext(130, 300);
     const zoomedView: CameraView = { leftX: 6.5, width: 13, centerY: 66, topY: 60, height: 12, zoom: 2 };
@@ -294,8 +294,10 @@ describe('CanvasRenderer', () => {
     );
 
     expect(main.scale.mock.calls).toContainEqual([20, 20]);
-    expect(minimap.translate.mock.calls[0]).toEqual([32.5, 0]);
-    expect(minimap.scale.mock.calls).toEqual([[2.5, 2.5]]);
+    expect(minimap.translate.mock.calls[0][0]).toBeCloseTo(36.11111, 5);
+    expect(minimap.translate.mock.calls[0][1]).toBe(0);
+    expect(minimap.scale.mock.calls[0][0]).toBeCloseTo(2.22222, 5);
+    expect(minimap.scale.mock.calls[0][1]).toBeCloseTo(2.22222, 5);
     expect(minimap.strokeRect.mock.calls).toContainEqual([6.5, 60, 13, 12]);
     expect(minimap.arcs).toContainEqual([13, 66, 0.25, 0, Math.PI * 2]);
   });
@@ -328,7 +330,7 @@ describe('CanvasRenderer', () => {
     expect(minimap.strokes.filter(({ style }) => style === '#7dd3fc')).toEqual([{
       arc: [13, 42, 2.75, 0, Math.PI * 2],
       style: '#7dd3fc',
-      lineWidth: 1,
+      lineWidth: 1.125,
       globalAlpha: 0.75,
     }]);
   });

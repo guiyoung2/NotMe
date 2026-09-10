@@ -56,15 +56,15 @@ describe('Camera', () => {
 
   it('골인 12단위 안에서 zoom을 1부터 2까지 연속 증가시킨다', () => {
     const outside = new Camera().update(
-      createSnapshot('first', [{ id: 'a:0', y: 108 }]),
+      createSnapshot('first', [{ id: 'a:0', y: NOTME_COURSE.goalY - 12 }]),
       NOTME_COURSE,
     );
     const halfway = new Camera().update(
-      createSnapshot('first', [{ id: 'a:0', y: 114 }]),
+      createSnapshot('first', [{ id: 'a:0', y: NOTME_COURSE.goalY - 6 }]),
       NOTME_COURSE,
     );
     const goal = new Camera().update(
-      createSnapshot('first', [{ id: 'a:0', y: 120 }]),
+      createSnapshot('first', [{ id: 'a:0', y: NOTME_COURSE.goalY }]),
       NOTME_COURSE,
     );
 
@@ -100,7 +100,7 @@ describe('Camera', () => {
   it('goal 근처 active가 사라져도 직전 zoom과 viewport를 유지한다', () => {
     const camera = new Camera();
     const nearGoal = camera.update(
-      createSnapshot('first', [{ id: 'a:0', y: 114 }]),
+      createSnapshot('first', [{ id: 'a:0', y: NOTME_COURSE.goalY - 6 }]),
       NOTME_COURSE,
     );
 

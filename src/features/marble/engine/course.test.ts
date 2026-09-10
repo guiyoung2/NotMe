@@ -3,12 +3,24 @@
 import { describe, expect, it } from 'vitest';
 
 import { NOTME_COURSE, validateCourse } from './course';
+import type { CourseObstacle } from './types';
+
+type Line = Extract<CourseObstacle, { kind: 'line' }>;
+type Spinner = Extract<CourseObstacle, { kind: 'spinner' }>;
+
+function isLine(obstacle: CourseObstacle): obstacle is Line {
+  return obstacle.kind === 'line';
+}
+
+function isSpinner(obstacle: CourseObstacle): obstacle is Spinner {
+  return obstacle.kind === 'spinner';
+}
 
 describe('NOTME_COURSE', () => {
   it('다섯 구간과 유효한 골인선을 가진다', () => {
     expect(NOTME_COURSE.width).toBe(26);
     expect(NOTME_COURSE.viewportHeight).toBe(24);
-    expect(NOTME_COURSE.goalY).toBe(120);
+    expect(NOTME_COURSE.goalY).toBe(135);
     expect(NOTME_COURSE.sections.map(({ kind }) => kind)).toEqual([
       'ramps',
       'pins',
@@ -17,7 +29,7 @@ describe('NOTME_COURSE', () => {
       'finish',
     ]);
     expect(validateCourse(NOTME_COURSE)).toEqual([]);
-    expect(NOTME_COURSE.goalY).toBeGreaterThan(NOTME_COURSE.viewportHeight * 4);
+    expect(NOTME_COURSE.goalY).toBeGreaterThan(NOTME_COURSE.viewportHeight * 5);
     expect(NOTME_COURSE.goalSensor.from.y).toBe(NOTME_COURSE.goalY);
     expect(NOTME_COURSE.goalSensor.to.y).toBe(NOTME_COURSE.goalY);
   });
@@ -37,21 +49,52 @@ describe('NOTME_COURSE', () => {
     ]));
   });
 
-  it('작은 핀과 양방향 회전봉을 거쳐 중앙 깔때기로 골인한다', () => {
+  it('촘촘한 핀과 같은 높이의 양방향 회전봉을 거쳐 중앙 깔때기로 골인한다', () => {
     const obstacles = NOTME_COURSE.sections.flatMap(({ obstacles }) => obstacles);
     const pins = obstacles.filter(({ kind }) => kind === 'circle');
-    const spinners = obstacles.filter(({ kind }) => kind === 'spinner');
+    const spinners = obstacles.filter(isSpinner);
     const goalLeft = Math.min(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
     const goalRight = Math.max(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
 
-    expect(pins.length).toBeGreaterThanOrEqual(12);
+    const mixingSpinners = spinners.filter(({ id }) => id.startsWith('spinner:mix-'));
+
+    expect(pins.length).toBeGreaterThanOrEqual(28);
     expect(Math.max(...pins.map((pin) => pin.kind === 'circle' ? pin.radius : 0))).toBeLessThanOrEqual(0.6);
-    expect(spinners.length).toBeGreaterThanOrEqual(5);
+    expect(spinners.length).toBeGreaterThanOrEqual(7);
+    expect(mixingSpinners).toHaveLength(6);
+    expect(new Set(mixingSpinners.map(({ center }) => center.y))).toEqual(new Set([68]));
     expect(spinners.some((spinner) => spinner.kind === 'spinner' && spinner.angularVelocity > 0)).toBe(true);
     expect(spinners.some((spinner) => spinner.kind === 'spinner' && spinner.angularVelocity < 0)).toBe(true);
     expect(goalRight - goalLeft).toBeGreaterThan(0.5);
-    expect(goalRight - goalLeft).toBeLessThan(NOTME_COURSE.width / 4);
+    expect(goalRight - goalLeft).toBeCloseTo(1.6, 5);
     expect((goalLeft + goalRight) / 2).toBe(NOTME_COURSE.width / 2);
+  });
+
+  it('긴 완만한 깔때기와 출구보다 긴 느린 회전봉 뒤의 세로 통로에서 골인한다', () => {
+    const fork = NOTME_COURSE.sections.find(({ kind }) => kind === 'fork');
+    const finish = NOTME_COURSE.sections.find(({ kind }) => kind === 'finish');
+    if (!fork || !finish) throw new Error('분기와 골인 구간이 필요합니다.');
+
+    const forkLines = fork.obstacles.filter(isLine);
+    const finishLines = finish.obstacles.filter(isLine);
+    const finishSpinner = finish.obstacles.find(isSpinner);
+    if (!finishSpinner) throw new Error('골인 회전봉이 필요합니다.');
+
+    const goalLeft = Math.min(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
+    const goalRight = Math.max(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
+    const goalWidth = goalRight - goalLeft;
+    const chuteWalls = finishLines.filter(({ from, to }) => (
+      from.x === to.x
+      && (from.x === goalLeft || from.x === goalRight)
+      && Math.max(from.y, to.y) === NOTME_COURSE.goalY
+    ));
+
+    expect(forkLines.every(({ from, to }) => Math.hypot(to.x - from.x, to.y - from.y) <= 6)).toBe(true);
+    expect(finishLines.some(({ from, to }) => Math.abs(to.y - from.y) >= 18)).toBe(true);
+    expect(finishSpinner.length).toBeGreaterThan(goalWidth);
+    expect(Math.abs(finishSpinner.angularVelocity)).toBeLessThanOrEqual(1.6);
+    expect(chuteWalls).toHaveLength(2);
+    expect(Math.min(...chuteWalls.map(({ from, to }) => Math.min(from.y, to.y)))).toBeLessThanOrEqual(129);
   });
 
   it('모든 벽과 장애물의 물리 형상이 코스 경계 안에 있다', () => {

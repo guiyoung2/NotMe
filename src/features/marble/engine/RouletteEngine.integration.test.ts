@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { Box2dPhysics } from './Box2dPhysics';
+import { NOTME_COURSE } from './course';
 import { RouletteEngine } from './RouletteEngine';
 import type { BodySnapshot } from './types';
 
@@ -28,7 +29,7 @@ async function runHundredMarbles(seed: number, skillsEnabled: boolean) {
     for (const { id } of marbles) {
       const body = physics.getMarble(id);
       if (body) {
-        if (body.x < 0 || body.x > 26 || body.y < 0) escaped.push(body);
+        if (body.x < 0 || body.x > NOTME_COURSE.width || body.y < 0) escaped.push(body);
         previous.set(id, body);
       }
     }
@@ -39,13 +40,14 @@ async function runHundredMarbles(seed: number, skillsEnabled: boolean) {
     const body = physics.getMarble(id);
     if (body) {
       const before = previous.get(id)!;
-      expect(before.y).toBeLessThan(120);
-      expect(body.y).toBeGreaterThanOrEqual(120);
+      expect(before.y).toBeLessThan(NOTME_COURSE.goalY);
+      expect(body.y).toBeGreaterThanOrEqual(NOTME_COURSE.goalY);
       expect(body.x).toBeGreaterThanOrEqual(0);
-      expect(body.x).toBeLessThanOrEqual(26);
-      const crossingX = before.x + (body.x - before.x) * (120 - before.y) / (body.y - before.y);
-      expect(crossingX).toBeGreaterThanOrEqual(0.25);
-      expect(crossingX).toBeLessThanOrEqual(25.75);
+      expect(body.x).toBeLessThanOrEqual(NOTME_COURSE.width);
+      const crossingX = before.x + (body.x - before.x)
+        * (NOTME_COURSE.goalY - before.y) / (body.y - before.y);
+      expect(crossingX).toBeGreaterThanOrEqual(NOTME_COURSE.goalSensor.from.x + body.radius);
+      expect(crossingX).toBeLessThanOrEqual(NOTME_COURSE.goalSensor.to.x - body.radius);
       crossings.add(id);
     }
     remove(id);
