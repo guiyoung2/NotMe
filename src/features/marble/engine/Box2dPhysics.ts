@@ -248,6 +248,9 @@ export class Box2dPhysics implements PhysicsAdapter {
       case 'circle':
         this.createCircle(obstacle.center, obstacle.radius);
         return;
+      case 'box':
+        this.createBox(obstacle);
+        return;
       case 'spinner':
         this.createSpinner(obstacle);
     }
@@ -294,6 +297,29 @@ export class Box2dPhysics implements PhysicsAdapter {
     box2d.LeakMitigator.freeFromCache(fixture);
 
     box2d.destroy(position);
+    box2d.destroy(shape);
+    box2d.destroy(bodyDefinition);
+  }
+
+  private createBox(obstacle: Extract<CourseObstacle, { kind: 'box' }>): void {
+    const { box2d, world } = this.requireWorld();
+    const bodyDefinition = new box2d.b2BodyDef();
+    const shape = new box2d.b2PolygonShape();
+    const fixtureDefinition = new box2d.b2FixtureDef();
+    const position = new box2d.b2Vec2(obstacle.center.x, obstacle.center.y);
+
+    bodyDefinition.set_position(position);
+    bodyDefinition.set_angle(obstacle.angle);
+    shape.SetAsBox(obstacle.width / 2, obstacle.height / 2);
+    fixtureDefinition.set_shape(shape);
+    fixtureDefinition.set_restitution(obstacle.restitution);
+
+    const body = world.CreateBody(bodyDefinition);
+    const fixture = body.CreateFixture(fixtureDefinition);
+    this.courseBodies.push(body);
+    box2d.LeakMitigator.freeFromCache(fixture);
+    box2d.destroy(position);
+    box2d.destroy(fixtureDefinition);
     box2d.destroy(shape);
     box2d.destroy(bodyDefinition);
   }

@@ -15,6 +15,15 @@ export interface CircleObstacle {
   radius: number;
 }
 
+export interface BoxObstacle {
+  kind: 'box';
+  center: CoursePoint;
+  width: number;
+  height: number;
+  angle: number;
+  restitution: number;
+}
+
 export interface SpinnerObstacle {
   kind: 'spinner';
   id: string;
@@ -24,7 +33,7 @@ export interface SpinnerObstacle {
   angularVelocity: number;
 }
 
-export type CourseObstacle = LineObstacle | CircleObstacle | SpinnerObstacle;
+export type CourseObstacle = LineObstacle | CircleObstacle | BoxObstacle | SpinnerObstacle;
 
 export type CourseSectionKind = 'ramps' | 'pins' | 'spinner' | 'fork' | 'finish';
 

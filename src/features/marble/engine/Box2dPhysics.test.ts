@@ -206,6 +206,22 @@ describe('Box2dPhysics', () => {
     expect(physics.getMarble('a:0')!.y).toBeLessThan(3);
   });
 
+  it('정적 box 범퍼가 낙하하는 구슬을 막는다', () => {
+    physics.createCourse({
+      ...testCourse,
+      sections: [{
+        kind: 'pins',
+        obstacles: [{
+          kind: 'box', center: { x: 5, y: 3 }, width: 8, height: 0.5,
+          angle: 0, restitution: 0,
+        }],
+      }],
+    });
+    physics.createMarble({ id: 'box-marble', x: 5, y: 1 });
+    for (let index = 0; index < 120; index += 1) physics.step(1 / 60);
+    expect(physics.getMarble('box-marble')!.y).toBeLessThan(3);
+  });
+
   it('원형 센서눈 구슬을 막지 않는다', () => {
     physics.createCourse({
       ...testCourse,

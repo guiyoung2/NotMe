@@ -210,6 +210,35 @@ describe('NOTME_COURSE', () => {
     }
   });
 
+  it('회전한 box의 실제 외곽과 반발력을 검증한다', () => {
+    const validBox = {
+      kind: 'box' as const,
+      center: { x: 13, y: 40 },
+      width: 2,
+      height: 0.4,
+      angle: Math.PI / 4,
+      restitution: 0.75,
+    };
+    const valid = structuredClone(NOTME_COURSE);
+    valid.sections[1].obstacles.push(validBox);
+    expect(validateCourse(valid)).toEqual([]);
+
+    for (const mutate of [
+      (box: typeof validBox) => { box.width = 0; },
+      (box: typeof validBox) => { box.angle = Number.NaN; },
+      (box: typeof validBox) => { box.restitution = 1.1; },
+      (box: typeof validBox) => { box.center.x = 0.1; },
+    ]) {
+      const invalid = structuredClone(valid);
+      const box = invalid.sections[1].obstacles.at(-1);
+      if (!box || box.kind !== 'box') throw new Error('box 장애물이 필요합니다.');
+      mutate(box);
+      expect(validateCourse(invalid)).toEqual(expect.arrayContaining([
+        expect.stringContaining('사각 장애물'),
+      ]));
+    }
+  });
+
   it('비어 있거나 중복된 spinner ID와 폭을 넘는 회전봉을 거부한다', () => {
     const emptyId = structuredClone(NOTME_COURSE);
     const emptySpinner = emptyId.sections[2].obstacles.find(({ kind }) => kind === 'spinner');

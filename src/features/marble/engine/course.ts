@@ -221,6 +221,27 @@ function validateObstacle(obstacle: CourseObstacle, course: CourseDefinition, er
     return;
   }
 
+  if (obstacle.kind === 'box') {
+    const halfWidth = obstacle.width / 2;
+    const halfHeight = obstacle.height / 2;
+    const extentX = Math.abs(Math.cos(obstacle.angle)) * halfWidth
+      + Math.abs(Math.sin(obstacle.angle)) * halfHeight;
+    const extentY = Math.abs(Math.sin(obstacle.angle)) * halfWidth
+      + Math.abs(Math.cos(obstacle.angle)) * halfHeight;
+    const valid = isPositiveNumber(obstacle.width)
+      && isPositiveNumber(obstacle.height)
+      && Number.isFinite(obstacle.angle)
+      && Number.isFinite(obstacle.restitution)
+      && obstacle.restitution >= 0
+      && obstacle.restitution <= 1
+      && obstacle.center.x - extentX >= 0
+      && obstacle.center.x + extentX <= course.width
+      && obstacle.center.y - extentY >= 0
+      && obstacle.center.y + extentY <= course.goalY;
+    if (!valid) errors.push('사각 장애물은 회전 외곽과 반발력을 포함해 유효해야 합니다.');
+    return;
+  }
+
   if (!obstacle.id.trim()) errors.push('회전봉 ID는 비어 있을 수 없습니다.');
   if (!isPositiveNumber(obstacle.length) || !isCircleInBounds(obstacle.center, obstacle.length / 2, course)) {
     errors.push('회전봉은 길이를 포함해 코스 범위 안에 있어야 합니다.');
