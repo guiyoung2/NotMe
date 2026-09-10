@@ -37,6 +37,23 @@ describe('NOTME_COURSE', () => {
     ]));
   });
 
+  it('작은 핀과 양방향 회전봉을 거쳐 중앙 깔때기로 골인한다', () => {
+    const obstacles = NOTME_COURSE.sections.flatMap(({ obstacles }) => obstacles);
+    const pins = obstacles.filter(({ kind }) => kind === 'circle');
+    const spinners = obstacles.filter(({ kind }) => kind === 'spinner');
+    const goalLeft = Math.min(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
+    const goalRight = Math.max(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
+
+    expect(pins.length).toBeGreaterThanOrEqual(12);
+    expect(Math.max(...pins.map((pin) => pin.kind === 'circle' ? pin.radius : 0))).toBeLessThanOrEqual(0.6);
+    expect(spinners.length).toBeGreaterThanOrEqual(5);
+    expect(spinners.some((spinner) => spinner.kind === 'spinner' && spinner.angularVelocity > 0)).toBe(true);
+    expect(spinners.some((spinner) => spinner.kind === 'spinner' && spinner.angularVelocity < 0)).toBe(true);
+    expect(goalRight - goalLeft).toBeGreaterThan(0.5);
+    expect(goalRight - goalLeft).toBeLessThan(NOTME_COURSE.width / 4);
+    expect((goalLeft + goalRight) / 2).toBe(NOTME_COURSE.width / 2);
+  });
+
   it('모든 벽과 장애물의 물리 형상이 코스 경계 안에 있다', () => {
     const obstacles = [
       ...NOTME_COURSE.walls,
@@ -92,28 +109,24 @@ describe('NOTME_COURSE', () => {
     expect(validateCourse(outsideCircle)).not.toEqual([]);
   });
 
-  it('0길이 일반 선분과 전폭이 아닌 골인 센서를 거부한다', () => {
+  it('0길이 일반 선분과 골인 센서를 거부하고 좁은 역방향 센서를 허용한다', () => {
     const zeroLengthLine = structuredClone(NOTME_COURSE);
     const line = zeroLengthLine.sections[0].obstacles.find(({ kind }) => kind === 'line');
     if (!line || line.kind !== 'line') throw new Error('램프 선분이 필요합니다.');
     line.to = { ...line.from };
 
-    const partialSensor = structuredClone(NOTME_COURSE);
-    partialSensor.goalSensor.from.x = 1;
-
     const zeroLengthSensor = structuredClone(NOTME_COURSE);
-    zeroLengthSensor.goalSensor.to.x = 0;
+    zeroLengthSensor.goalSensor.to.x = zeroLengthSensor.goalSensor.from.x;
 
     const reversedSensor = structuredClone(NOTME_COURSE);
     reversedSensor.goalSensor = {
-      from: { x: reversedSensor.width, y: reversedSensor.goalY },
-      to: { x: 0, y: reversedSensor.goalY },
+      from: { x: 15, y: reversedSensor.goalY },
+      to: { x: 11, y: reversedSensor.goalY },
     };
 
     expect(validateCourse(zeroLengthLine)).toEqual(expect.arrayContaining([
       expect.stringContaining('선분'),
     ]));
-    expect(validateCourse(partialSensor)).not.toEqual([]);
     expect(validateCourse(zeroLengthSensor)).not.toEqual([]);
     expect(validateCourse(reversedSensor)).toEqual([]);
   });

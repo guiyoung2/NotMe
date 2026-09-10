@@ -141,6 +141,26 @@ describe('RouletteEngine 순위', () => {
     expect(physics.stepSeconds).toEqual([0.01, 0.01, 0.01]);
   });
 
+  it('같은 y를 교차해도 중앙 센서를 지난 구슬만 골인한다', async () => {
+    const physics = new FakePhysics();
+    physics.onStep = (step, current) => {
+      const y = step === 1 ? 119 : 121;
+      Object.assign(current.marbles.get('b:0')!, { x: 13, y });
+      Object.assign(current.marbles.get('a:0')!, { x: 5, y });
+      Object.assign(current.marbles.get('c:0')!, { x: 21, y });
+    };
+    const engine = createEngine(physics);
+    await engine.init();
+
+    engine.advance(20);
+
+    expect(engine.snapshot().finishOrder).toEqual([
+      { id: 'b:0', participantId: 'b', name: '철수', rank: 1 },
+    ]);
+    expect(physics.getMarble('a:0')).toEqual({ id: 'a:0', x: 13, y: 1, angle: 0, radius: 0.25 });
+    expect(physics.getMarble('c:0')).toEqual({ id: 'c:0', x: 13.6, y: 1, angle: 0, radius: 0.25 });
+  });
+
   it('전체 순위가 확정된 뒤에만 first 당첨자를 공개한다', async () => {
     const physics = new FakePhysics();
     physics.onStep = (step, current) => {
