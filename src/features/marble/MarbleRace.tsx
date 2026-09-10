@@ -93,6 +93,7 @@ export function MarbleRace({
       raceDebug = Object.freeze({
         get finishedCount() { return debugSnapshot?.finishOrder.length ?? 0; },
         get activeCount() { return debugSnapshot?.active.length ?? 0; },
+        get skillActivationCount() { return debugSnapshot?.skillActivationCount ?? 0; },
         get speed() { return debugSnapshot?.speed ?? 1; },
         get frameCount() { return frameCount; },
         get frameDurationsMs() {

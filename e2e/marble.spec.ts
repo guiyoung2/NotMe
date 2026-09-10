@@ -90,12 +90,13 @@ test('세 구슬 설정으로 레이스를 시작하고 Canvas의 누르기 안�
   expect(await page.evaluate(() => '__NOTME_RACE_DEBUG__' in window)).toBe(false);
 });
 
-test('100개 구슬이 60초 안에 순위를 확정하고 frame p95가 32ms 이하이다', async ({ page }, testInfo) => {
+test('스킬을 켠 100개 구슬이 60초 안에 순위를 확정하고 frame p95가 32ms 이하이다', async ({ page }, testInfo) => {
   test.setTimeout(75_000);
   await page.goto('/marble');
   await fillTwoParticipants(page);
   await page.getByRole('spinbutton', { name: '참가자 1 구슬 수' }).fill('50');
   await page.getByRole('spinbutton', { name: '참가자 2 구슬 수' }).fill('50');
+  await page.getByRole('switch', { name: '스킬 사용' }).check();
 
   const startedAt = Date.now();
   await page.getByRole('button', { name: '레이스 시작' }).click();
@@ -111,31 +112,40 @@ test('100개 구슬이 60초 안에 순위를 확정하고 frame p95가 32ms 이
   let missedFrames = 0;
   let completionMs = 0;
   let sawArrivalProgress = false;
+  const sampleRace = async () => {
+    const snapshot = await page.evaluate(() => {
+      const debug = window.__NOTME_RACE_DEBUG__;
+      return debug ? {
+        finishedCount: debug.finishedCount,
+        activeCount: debug.activeCount,
+        skillActivationCount: debug.skillActivationCount,
+        speed: debug.speed,
+        frameCount: debug.frameCount,
+        frameDurationsMs: debug.frameDurationsMs,
+        activeMarbles: debug.activeMarbles,
+        arrivalProgress: document.querySelector('[aria-label="도착 진행"]')?.textContent,
+      } : null;
+    });
+    const elapsedMs = Date.now() - startedAt;
+    progress.push({ elapsedMs, snapshot });
+    if (snapshot) {
+      if (/^도착 ([1-9]|[1-9][0-9]) \/ 100$/.test(snapshot.arrivalProgress ?? '')) sawArrivalProgress = true;
+      const newFrames = snapshot.frameCount - lastFrameCount;
+      missedFrames += Math.max(0, newFrames - snapshot.frameDurationsMs.length);
+      if (newFrames > 0) frameDurationsMs.push(...snapshot.frameDurationsMs.slice(-newFrames));
+      lastFrameCount = snapshot.frameCount;
+      if (snapshot.finishedCount === 100) completionMs = elapsedMs;
+    }
+    return snapshot;
+  };
   try {
+    await expect.poll(async () => (await sampleRace())?.skillActivationCount ?? 0, {
+      timeout: 5_000,
+      intervals: [250],
+    }).toBeGreaterThanOrEqual(1);
+
     await expect.poll(async () => {
-      const snapshot = await page.evaluate(() => {
-        const debug = window.__NOTME_RACE_DEBUG__;
-        return debug ? {
-          finishedCount: debug.finishedCount,
-          activeCount: debug.activeCount,
-          speed: debug.speed,
-          frameCount: debug.frameCount,
-          frameDurationsMs: debug.frameDurationsMs,
-          activeMarbles: debug.activeMarbles,
-          arrivalProgress: document.querySelector('[aria-label="도착 진행"]')?.textContent,
-        } : null;
-      });
-      const elapsedMs = Date.now() - startedAt;
-      progress.push({ elapsedMs, snapshot });
-      if (snapshot) {
-        if (/^도착 ([1-9]|[1-9][0-9]) \/ 100$/.test(snapshot.arrivalProgress ?? '')) sawArrivalProgress = true;
-        const newFrames = snapshot.frameCount - lastFrameCount;
-        missedFrames += Math.max(0, newFrames - snapshot.frameDurationsMs.length);
-        if (newFrames > 0) frameDurationsMs.push(...snapshot.frameDurationsMs.slice(-newFrames));
-        lastFrameCount = snapshot.frameCount;
-        if (snapshot.finishedCount === 100) completionMs = elapsedMs;
-      }
-      return snapshot?.finishedCount ?? 0;
+      return (await sampleRace())?.finishedCount ?? 0;
     }, { timeout: 60_000, intervals: [250] }).toBe(100);
 
     const sortedFrames = [...frameDurationsMs].sort((left, right) => left - right);
