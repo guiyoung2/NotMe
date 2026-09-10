@@ -197,7 +197,7 @@ describe('CanvasRenderer', () => {
       expect(offsetX + 26 * scale).toBeLessThanOrEqual(width - 0.5);
       expect(offsetY + (y - 0.25) * scale).toBeGreaterThanOrEqual(-0.000001);
       expect(offsetY + (y + 0.25) * scale).toBeLessThanOrEqual(height + 0.000001);
-      const [left, top, visibleWidth, visibleHeight] = minimap.strokeRect.mock.calls[0];
+      const [left, top, visibleWidth, visibleHeight] = minimap.strokeRect.mock.calls.at(-1)!;
       expect(left).toBeCloseTo(-offsetX / scale);
       expect(top).toBeCloseTo(-offsetY / scale);
       expect(visibleWidth).toBeCloseTo(width / scale);
