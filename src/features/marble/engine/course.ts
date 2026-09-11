@@ -144,6 +144,7 @@ export const NOTME_COURSE: CourseDefinition = {
       obstacles: [
         ...toLines(LEFT_CORRIDOR.slice(12)),
         ...toLines(RIGHT_CORRIDOR.slice(13)),
+        { kind: 'line', from: { x: 26, y: 100.5 }, to: { x: 16, y: 106.75 } },
         {
           kind: 'spinner', id: 'spinner:finish-gate',
           center: { x: 14, y: 106.75 },

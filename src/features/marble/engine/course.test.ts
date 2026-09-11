@@ -80,6 +80,7 @@ describe('NOTME_COURSE', () => {
       { kind: 'line', from: { x: 14.75, y: 43 }, to: { x: 17.5, y: 40.25 } },
       { kind: 'line', from: { x: 8.25, y: 99.25 }, to: { x: 15.1, y: 106.75 } },
       { kind: 'line', from: { x: 24, y: 100.5 }, to: { x: 16, y: 106.75 } },
+      { kind: 'line', from: { x: 26, y: 100.5 }, to: { x: 16, y: 106.75 } },
       { kind: 'line', from: { x: 15.1, y: 106.75 }, to: { x: 15.1, y: 111 } },
       { kind: 'line', from: { x: 16, y: 106.75 }, to: { x: 16, y: 111 } },
     ]));
