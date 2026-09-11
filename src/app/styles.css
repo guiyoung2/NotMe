@@ -62,9 +62,12 @@ h2 { margin-top: 40px; font-size: 1rem; font-weight: 600; color: var(--color-mut
 .reload-prompt { display: block; width: 100%; margin-top: 16px; }
 
 .game-shell { padding-top: 16px; }
-.game-shell__header { display: grid; grid-template-columns: minmax(76px, 1fr) auto minmax(76px, 1fr); align-items: center; gap: 10px; }
-.game-shell__header h1 { font-size: 1.25rem; text-align: center; }
-.game-shell__header button:last-child { justify-self: end; }
+.game-shell__header { position: relative; display: flex; min-height: 44px; align-items: center; justify-content: center; }
+.game-shell__header h1 { max-width: calc(100% - 132px); overflow: hidden; font-size: 1.25rem; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.game-shell__home-button { position: absolute; left: 0; display: grid; width: 44px; min-height: 44px; padding: 0; place-items: center; border-color: transparent; border-radius: 50%; color: var(--color-muted); background: transparent; }
+.game-shell__home-button:hover { color: var(--color-text); background: var(--color-surface); }
+.game-shell__home-button svg { width: 21px; height: 21px; fill: currentColor; }
+.game-shell__header button:last-child { position: absolute; right: 0; }
 .game-shell__main { padding-top: 32px; }
 .placeholder-game { color: var(--color-muted); }
 

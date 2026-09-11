@@ -23,6 +23,12 @@ function renderShell({ dirty = false, onReset = vi.fn() }: { dirty?: boolean; on
 afterEach(cleanup);
 
 describe('GameShell', () => {
+  it('홈 이동을 아이콘 버튼의 접근 가능한 이름으로 제공한다', () => {
+    renderShell();
+
+    expect(screen.getByRole('button', { name: '홈으로' })).toHaveAttribute('aria-label', '홈으로');
+  });
+
   it('진행 중 홈 이동을 취소할 수 있다', async () => {
     const user = userEvent.setup();
     renderShell({ dirty: true });

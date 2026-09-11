@@ -89,7 +89,17 @@ export function GameShell({ title, dirty, onReset, children }: GameShellProps): 
     <div className="app">
       <div className="app__content game-shell">
         <header className="game-shell__header">
-          <button ref={homeButtonRef} type="button" onClick={handleHome}>홈으로</button>
+          <button
+            ref={homeButtonRef}
+            className="game-shell__home-button"
+            type="button"
+            aria-label="홈으로"
+            onClick={handleHome}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z" />
+            </svg>
+          </button>
           <h1>{title}</h1>
           <button
             ref={resetButtonRef}
