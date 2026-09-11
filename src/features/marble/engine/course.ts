@@ -12,115 +12,122 @@ const toLines = (points: readonly CoursePoint[]): LineObstacle[] => points.slice
 }));
 
 const LEFT_CORRIDOR = [
-  { x: 0, y: 0 }, { x: 4, y: 12 }, { x: 2, y: 24 }, { x: 5.5, y: 32 },
-  { x: 2.5, y: 43 }, { x: 2.5, y: 57 }, { x: 3, y: 62 }, { x: 3, y: 76 },
-  { x: 3, y: 120 }, { x: 12.4, y: 129.5 },
+  { x: 9.25, y: 0 }, { x: 9.25, y: 8.5 }, { x: 2, y: 19.25 },
+  { x: 2, y: 26 }, { x: 9.75, y: 30 }, { x: 9.75, y: 33.5 },
+  { x: 1.25, y: 41 }, { x: 1.25, y: 53.75 }, { x: 8.25, y: 58.75 },
+  { x: 8.25, y: 63 }, { x: 9.25, y: 64 }, { x: 8.25, y: 65 },
+  { x: 8.25, y: 99.25 }, { x: 15.1, y: 106.75 }, { x: 15.1, y: 111 },
 ] as const satisfies readonly CoursePoint[];
 
 const RIGHT_CORRIDOR = [
-  { x: 26, y: 0 }, { x: 22, y: 13 }, { x: 24, y: 25 }, { x: 20.5, y: 34 },
-  { x: 24, y: 45 }, { x: 23.5, y: 57 }, { x: 23, y: 62 }, { x: 23, y: 76 },
-  { x: 23, y: 120 }, { x: 13.6, y: 129.5 },
+  { x: 16.5, y: 0 }, { x: 16.5, y: 9.25 }, { x: 9.5, y: 20 },
+  { x: 9.5, y: 22.5 }, { x: 17.5, y: 26 }, { x: 17.5, y: 33.5 },
+  { x: 24, y: 38.5 }, { x: 19, y: 45.5 }, { x: 19, y: 55.5 },
+  { x: 24, y: 59.25 }, { x: 24, y: 63 }, { x: 23, y: 64 },
+  { x: 24, y: 65 }, { x: 24, y: 100.5 }, { x: 16, y: 106.75 },
+  { x: 16, y: 111 },
 ] as const satisfies readonly CoursePoint[];
+
+const INNER_LINES = [
+  ...toLines([
+    { x: 12.75, y: 37.5 }, { x: 7, y: 43.5 }, { x: 7, y: 49.75 },
+    { x: 12.75, y: 53.75 }, { x: 12.75, y: 37.5 },
+  ]),
+  ...toLines([
+    { x: 14.75, y: 37.5 }, { x: 14.75, y: 43 },
+    { x: 17.5, y: 40.25 }, { x: 14.75, y: 37.5 },
+  ]),
+] satisfies LineObstacle[];
+
+const CHEVRON_X = [9.4, 11.3, 13.2, 15.1, 17, 18.9, 20.7, 22.7] as const;
+const LOWER_PIN_ROWS = [
+  { y: 92, xs: [9.5, 12.75, 16, 19.25, 22.5] },
+  { y: 95, xs: [11, 14.25, 17.5, 20.75] },
+  { y: 98, xs: [9.5, 12.75, 16, 19.25, 22.5] },
+] as const;
+
+const TOP_PINS = [
+  B(15.5, 30, 0.2, 0.2, -Math.PI / 4, 1),
+  B(15.5, 32, 0.2, 0.2, -Math.PI / 4),
+  B(15.5, 28, 0.2, 0.2, -Math.PI / 4),
+  B(12.5, 30, 0.2, 0.2, -Math.PI / 4),
+  B(12.5, 32, 0.2, 0.2, -Math.PI / 4),
+  B(12.5, 28, 0.2, 0.2, -Math.PI / 4),
+];
+
+const CHEVRONS = [
+  ...CHEVRON_X.map((x) => B(x, 66.6, 0.6, 0.1, Math.PI / 4)),
+  ...CHEVRON_X.map((x) => B(x, 69.1, 0.6, 0.1, -Math.PI / 4)),
+];
+
+const LOWER_PINS = LOWER_PIN_ROWS.flatMap(({ y, xs }) => (
+  xs.map((x) => B(x, y, 0.25, 0.25, Math.PI / 4))
+));
 
 export const NOTME_COURSE: CourseDefinition = {
   width: 26,
   viewportHeight: 24,
-  goalY: 135,
+  goalY: 111,
   walls: [
     { kind: 'line', from: { x: 0, y: 0 }, to: { x: 26, y: 0 } },
-    { kind: 'line', from: { x: 0, y: 0 }, to: { x: 0, y: 135 } },
-    { kind: 'line', from: { x: 26, y: 0 }, to: { x: 26, y: 135 } },
+    { kind: 'line', from: { x: 0, y: 0 }, to: { x: 0, y: 111 } },
+    { kind: 'line', from: { x: 26, y: 0 }, to: { x: 26, y: 111 } },
   ],
   sections: [
     {
       kind: 'ramps',
       obstacles: [
-        ...toLines(LEFT_CORRIDOR.slice(0, 4)),
-        ...toLines(RIGHT_CORRIDOR.slice(0, 4)),
-        { kind: 'line', from: { x: 4, y: 12 }, to: { x: 17.1, y: 17.1 } },
-        { kind: 'line', from: { x: 24, y: 25 }, to: { x: 10, y: 30 } },
-        {
-          kind: 'spinner', id: 'spinner:upper-left',
-          center: { x: 19.5, y: 19.5 },
-          length: 7,
-          angle: 0.15,
-          angularVelocity: 2.2,
-        },
-        {
-          kind: 'spinner', id: 'spinner:upper-right',
-          center: { x: 7.5, y: 32 },
-          length: 7.5,
-          angle: -0.2,
-          angularVelocity: -1.8,
-        },
+        ...toLines(LEFT_CORRIDOR.slice(0, 6)),
+        ...toLines(RIGHT_CORRIDOR.slice(0, 6)),
+        ...TOP_PINS,
       ],
     },
     {
       kind: 'pins',
       obstacles: [
-        ...toLines(LEFT_CORRIDOR.slice(3, 7)),
-        ...toLines(RIGHT_CORRIDOR.slice(3, 7)),
-        B(6, 35, 1, 1, Math.PI / 4, 0.8),
-        B(10, 36, 2, 0.35, -0.35),
-        B(14, 34.5, 1, 1, Math.PI / 4),
-        B(18, 36.5, 2.2, 0.35, 0.3, 0.8),
-        B(4.5, 42, 2.2, 0.35, 0.35),
-        B(8, 43, 1, 1, Math.PI / 4, 0.75),
-        B(12.5, 42, 2, 0.35, -0.3),
-        B(17, 43.5, 1, 1, Math.PI / 4),
-        B(21.5, 42, 1.8, 0.35, -0.4, 0.8),
-        B(5, 49, 1, 1, Math.PI / 4, 0.75),
-        B(9.5, 50, 2.4, 0.35, -0.3),
-        B(14, 49, 1, 1, Math.PI / 4),
-        B(18.5, 50.5, 2.2, 0.35, 0.35),
-        B(22, 49, 1, 1, Math.PI / 4, 0.75),
-        B(6, 56, 2.6, 0.35, 0.25),
-        B(11, 56.5, 1, 1, Math.PI / 4),
-        B(16, 55.5, 2.6, 0.35, -0.25),
-        B(21, 56.5, 1, 1, Math.PI / 4, 0.8),
-        { kind: 'circle', center: { x: 13, y: 39 }, radius: 0.35 },
-        { kind: 'circle', center: { x: 4, y: 54 }, radius: 0.35 },
-        { kind: 'circle', center: { x: 23, y: 54 }, radius: 0.35 },
+        ...toLines(LEFT_CORRIDOR.slice(5, 12)),
+        ...toLines(RIGHT_CORRIDOR.slice(5, 13)),
+        ...INNER_LINES,
+        ...CHEVRONS,
       ],
     },
     {
       kind: 'spinner',
       obstacles: [
-        ...toLines(LEFT_CORRIDOR.slice(6, 8)),
-        ...toLines(RIGHT_CORRIDOR.slice(6, 8)),
+        ...toLines(LEFT_CORRIDOR.slice(11, 13)),
+        ...toLines(RIGHT_CORRIDOR.slice(12, 14)),
         {
           kind: 'spinner', id: 'spinner:row-1',
-          center: { x: 3, y: 68 },
-          length: 5.5,
+          center: { x: 8, y: 75 },
+          length: 2,
           angle: 0,
           angularVelocity: 3.5,
         },
         {
           kind: 'spinner', id: 'spinner:row-2',
-          center: { x: 8, y: 68 },
-          length: 5.5,
+          center: { x: 12, y: 75 },
+          length: 2,
           angle: 0,
           angularVelocity: -3.5,
         },
         {
           kind: 'spinner', id: 'spinner:row-3',
-          center: { x: 13, y: 68 },
-          length: 5.5,
+          center: { x: 16, y: 75 },
+          length: 2,
           angle: 0,
           angularVelocity: 3.5,
         },
         {
           kind: 'spinner', id: 'spinner:row-4',
-          center: { x: 18, y: 68 },
-          length: 5.5,
+          center: { x: 20, y: 75 },
+          length: 2,
           angle: 0,
           angularVelocity: -3.5,
         },
         {
           kind: 'spinner', id: 'spinner:row-5',
-          center: { x: 23, y: 68 },
-          length: 5.5,
+          center: { x: 24, y: 75 },
+          length: 2,
           angle: 0,
           angularVelocity: 3.5,
         },
@@ -129,49 +136,27 @@ export const NOTME_COURSE: CourseDefinition = {
     {
       kind: 'fork',
       obstacles: [
-        ...toLines(LEFT_CORRIDOR.slice(7)),
-        ...toLines(RIGHT_CORRIDOR.slice(7)),
-        {
-          kind: 'spinner', id: 'spinner:lower-left',
-          center: { x: 7, y: 83 },
-          length: 6.5,
-          angle: Math.PI / 6,
-          angularVelocity: 2,
-        },
-        B(16, 80, 2.2, 0.35, -0.3, 0.2),
-        B(19, 87, 1.0, 1.0, Math.PI / 4, 0.75),
-        { kind: 'line', from: { x: 6, y: 90 }, to: { x: 10, y: 94 } },
-        B(12.5, 95, 2.4, 0.35, 0.25, 0.2),
-        {
-          kind: 'spinner', id: 'spinner:lower-right',
-          center: { x: 19, y: 99 },
-          length: 7,
-          angle: -Math.PI / 5,
-          angularVelocity: -1.7,
-        },
-        B(7, 103, 1.0, 1.0, Math.PI / 4, 0.8),
-        B(11, 107, 2.2, 0.35, -0.3, 0.2),
-        B(17, 107, 1.0, 1.0, Math.PI / 4, 0.75),
+        ...LOWER_PINS,
       ],
     },
     {
       kind: 'finish',
       obstacles: [
+        ...toLines(LEFT_CORRIDOR.slice(12)),
+        ...toLines(RIGHT_CORRIDOR.slice(13)),
         {
           kind: 'spinner', id: 'spinner:finish-gate',
-          center: { x: 10.9, y: 129.5 },
-          length: 4.5,
+          center: { x: 14, y: 106.75 },
+          length: 2,
           angle: 0,
           angularVelocity: -1.2,
         },
-        { kind: 'line', from: { x: 12.4, y: 129.5 }, to: { x: 12.4, y: 135 } },
-        { kind: 'line', from: { x: 13.6, y: 129.5 }, to: { x: 13.6, y: 135 } },
       ],
     },
   ],
   goalSensor: {
-    from: { x: 12.4, y: 135 },
-    to: { x: 13.6, y: 135 },
+    from: { x: 15.1, y: 111 },
+    to: { x: 16, y: 111 },
   },
 };
 
