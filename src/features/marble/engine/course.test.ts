@@ -61,10 +61,37 @@ describe('NOTME_COURSE', () => {
     expect(boxes.length).toBeGreaterThanOrEqual(18);
     expect(boxes.some(({ restitution }) => restitution >= 0.7)).toBe(true);
     expect(spinners).toHaveLength(10);
-    expect(spinners.filter(({ center }) => center.y < 30)).toHaveLength(2);
+    expect(spinners.filter(({ center }) => center.y < 34)).toHaveLength(2);
     expect(row).toHaveLength(5);
     expect(new Set(row.map(({ center }) => center.y))).toEqual(new Set([68]));
     expect(spinners.filter(({ center }) => center.y > 76 && center.y < 112)).toHaveLength(2);
+  });
+
+  it('외곽 프레임 안에 연속 지그재그 통로와 램프 출구 회전봉을 둔다', () => {
+    const obstacles = NOTME_COURSE.sections.flatMap(({ obstacles }) => obstacles);
+    const internalWalls = obstacles.filter(isLine);
+    const upperSpinners = obstacles.filter(isSpinner).filter(({ id }) => id.startsWith('spinner:upper-'));
+
+    expect(internalWalls).toEqual(expect.arrayContaining([
+      { kind: 'line', from: { x: 0, y: 0 }, to: { x: 4, y: 12 } },
+      { kind: 'line', from: { x: 26, y: 0 }, to: { x: 22, y: 13 } },
+      { kind: 'line', from: { x: 3, y: 62 }, to: { x: 3, y: 76 } },
+      { kind: 'line', from: { x: 23, y: 62 }, to: { x: 23, y: 76 } },
+    ]));
+    expect(upperSpinners).toMatchObject([
+      {
+        id: 'spinner:upper-left',
+        center: { x: 19.5, y: 19.5 },
+        length: 7,
+        angularVelocity: 2.2,
+      },
+      {
+        id: 'spinner:upper-right',
+        center: { x: 7.5, y: 32 },
+        length: 7.5,
+        angularVelocity: -1.8,
+      },
+    ]);
   });
 
   it('연속된 결승 유도벽과 입구를 가로막는 긴 게이트를 갖는다', () => {
@@ -104,10 +131,10 @@ describe('NOTME_COURSE', () => {
       to: { x: 13.6, y: 135 },
     });
     expect(gate).toMatchObject({
-      center: { x: 11.75, y: 125.2 },
+      center: { x: 14.25, y: 125.2 },
       length: 5.5,
       angle: 0,
-      angularVelocity: 1.2,
+      angularVelocity: -1.2,
     });
     expect(gate.length).toBeGreaterThan(goalWidth * 4);
   });
