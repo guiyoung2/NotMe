@@ -181,7 +181,7 @@ describe('CanvasRenderer', () => {
     const renderer = new CanvasRenderer(NOTME_COURSE, [
       createActive('a:0', 'a', '짱구', 0, 0), createActive('b:0', 'b', '철수', 0, 0),
     ]);
-    for (const y of [1, 60, 119.5]) {
+    for (const y of [1, 60, NOTME_COURSE.goalY - 0.5]) {
       const snapshot = createSnapshot({ active: [
         createActive('a:0', 'a', '짱구', 0.3, y),
         createActive('b:0', 'b', '철수', 25.7, y),
@@ -229,6 +229,10 @@ describe('CanvasRenderer', () => {
   it('외벽·line·circle, snapshot angle 회전체, 활성 구슬을 그리고 Canvas에는 도착 순위를 쓰지 않는다', () => {
     const main = createContext(260, 240);
     const minimap = createContext(104, 240);
+    const course = structuredClone(NOTME_COURSE);
+    course.sections[1].obstacles.push({
+      kind: 'circle', center: { x: 13, y: 39 }, radius: 0.35,
+    });
     const snapshot = createSnapshot({
       active: [
         createActive('a:0', 'a', '짱구', 4, 40),
@@ -242,7 +246,7 @@ describe('CanvasRenderer', () => {
       finishOrder: [{ id: 'a:0', participantId: 'a', name: '짱구', rank: 1 }],
     });
 
-    new CanvasRenderer(NOTME_COURSE, snapshot.active).render(
+    new CanvasRenderer(course, snapshot.active).render(
       { main: main.context, minimap: minimap.context },
       snapshot,
       cameraView,
@@ -306,9 +310,11 @@ describe('CanvasRenderer', () => {
     expect(minimap.fills.map(({ style }) => style)).toEqual(['hsl(0 100% 70%)', 'hsl(240 100% 70%)']);
   });
 
-  it('미니맵은 26x135 전체를 고정 비율로 fit하고 main camera와 독립적으로 viewport를 그린다', () => {
+  it('미니맵은 26x111 전체를 고정 비율로 fit하고 main camera와 독립적으로 viewport를 그린다', () => {
     const main = createContext(260, 240);
     const minimap = createContext(130, 300);
+    const minimapScale = 300 / NOTME_COURSE.goalY;
+    const minimapOffsetX = (130 - NOTME_COURSE.width * minimapScale) / 2;
     const zoomedView: CameraView = { leftX: 6.5, width: 13, centerY: 66, topY: 60, height: 12, zoom: 2 };
     const snapshot = createSnapshot({
       active: [createActive('a:0', 'a', '짱구', 13, 66)],
@@ -321,10 +327,10 @@ describe('CanvasRenderer', () => {
     );
 
     expect(main.scale.mock.calls).toContainEqual([20, 20]);
-    expect(minimap.translate.mock.calls[0][0]).toBeCloseTo(36.11111, 5);
+    expect(minimap.translate.mock.calls[0][0]).toBeCloseTo(minimapOffsetX);
     expect(minimap.translate.mock.calls[0][1]).toBe(0);
-    expect(minimap.scale.mock.calls[0][0]).toBeCloseTo(2.22222, 5);
-    expect(minimap.scale.mock.calls[0][1]).toBeCloseTo(2.22222, 5);
+    expect(minimap.scale.mock.calls[0][0]).toBeCloseTo(minimapScale);
+    expect(minimap.scale.mock.calls[0][1]).toBeCloseTo(minimapScale);
     expect(minimap.strokeRect.mock.calls).toContainEqual([6.5, 60, 13, 12]);
     expect(minimap.arcs).toContainEqual([13, 66, 0.25, 0, Math.PI * 2]);
   });
@@ -332,6 +338,7 @@ describe('CanvasRenderer', () => {
   it('250ms 지난 스킬 충격파를 main과 미니맵에 확장·감쇠한 원으로 그린다', () => {
     const main = createContext(260, 240);
     const minimap = createContext(104, 240);
+    const minimapScale = 240 / NOTME_COURSE.goalY;
     const snapshot = createSnapshot({
       active: [createActive('a:0', 'a', '짱구', 13, 42)],
       skillEffects: [{
@@ -357,7 +364,7 @@ describe('CanvasRenderer', () => {
     expect(minimap.strokes.filter(({ style }) => style === '#7dd3fc')).toEqual([{
       arc: [13, 42, 2.75, 0, Math.PI * 2],
       style: '#7dd3fc',
-      lineWidth: 1.125,
+      lineWidth: 2 / minimapScale,
       globalAlpha: 0.75,
     }]);
   });
