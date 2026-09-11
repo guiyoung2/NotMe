@@ -16,8 +16,8 @@
 - 새 장애물 타입·물리 엔진 API·제품용 충돌 계측 API를 추가하지 않는다.
 - 외곽 x=`0`, x=`26` 안전 프레임은 y=`0`부터 y=`135`까지 유지한다.
 - 상단 2개 회전봉은 램프 출구 회전 반경 안에 둔다.
-- 중앙 5개 회전봉은 center x=`3, 8, 13, 18, 23`, y=`68`, length=`3.2`를 유지한다.
-- 결승 게이트는 center=`(14.25,125.2)`, length=`5.5`, angularVelocity=`-1.2`를 사용한다.
+- 중앙 5개 회전봉은 center x=`3, 8, 13, 18, 23`, y=`68`, length=`5.5`로 서로 겹친다.
+- 결승 게이트는 center=`(11.75,126)`, length=`3`, angularVelocity=`-1.2`를 사용한다.
 - 구조 테스트 RED/GREEN 각 1회, 고정 시드 100구슬 통합 테스트 1회, 전체 단위 테스트 1회, build 1회만 실행한다.
 
 ---
@@ -53,7 +53,7 @@ expect(upperSpinners).toMatchObject([
   { id: 'spinner:upper-right', center: { x: 7.5, y: 32 }, length: 7.5, angularVelocity: -1.8 },
 ]);
 expect(gate).toMatchObject({
-  center: { x: 14.25, y: 125.2 }, length: 5.5, angle: 0, angularVelocity: -1.2,
+  center: { x: 11.75, y: 126 }, length: 3, angle: 0, angularVelocity: -1.2,
 });
 ```
 

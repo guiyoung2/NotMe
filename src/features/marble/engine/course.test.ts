@@ -64,6 +64,13 @@ describe('NOTME_COURSE', () => {
     expect(spinners.filter(({ center }) => center.y < 34)).toHaveLength(2);
     expect(row).toHaveLength(5);
     expect(new Set(row.map(({ center }) => center.y))).toEqual(new Set([68]));
+    expect(row.map(({ center, length }) => ({ center, length }))).toEqual([
+      { center: { x: 3, y: 68 }, length: 5.5 },
+      { center: { x: 8, y: 68 }, length: 5.5 },
+      { center: { x: 13, y: 68 }, length: 5.5 },
+      { center: { x: 18, y: 68 }, length: 5.5 },
+      { center: { x: 23, y: 68 }, length: 5.5 },
+    ]);
     expect(spinners.filter(({ center }) => center.y > 76 && center.y < 112)).toHaveLength(2);
   });
 
@@ -131,12 +138,12 @@ describe('NOTME_COURSE', () => {
       to: { x: 13.6, y: 135 },
     });
     expect(gate).toMatchObject({
-      center: { x: 14.25, y: 125.2 },
-      length: 5.5,
+      center: { x: 11.75, y: 126 },
+      length: 3,
       angle: 0,
       angularVelocity: -1.2,
     });
-    expect(gate.length).toBeGreaterThan(goalWidth * 4);
+    expect(gate.length).toBeGreaterThan(goalWidth * 2);
   });
 
   it('모든 벽과 장애물의 물리 형상이 코스 경계 안에 있다', () => {
