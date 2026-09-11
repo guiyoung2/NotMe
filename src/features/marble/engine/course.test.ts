@@ -128,8 +128,8 @@ describe('NOTME_COURSE', () => {
       { kind: 'line', from: { x: 19.5, y: 119 }, to: { x: 13.6, y: 126 } },
     ]);
     expect(lines).toEqual(expect.arrayContaining([
-      { kind: 'line', from: { x: 6.5, y: 116 }, to: { x: 6.5, y: 119 } },
-      { kind: 'line', from: { x: 19.5, y: 116 }, to: { x: 19.5, y: 119 } },
+      { kind: 'line', from: { x: 6.5, y: 108 }, to: { x: 6.5, y: 119 } },
+      { kind: 'line', from: { x: 19.5, y: 108 }, to: { x: 19.5, y: 119 } },
       { kind: 'line', from: { x: 12.4, y: 126 }, to: { x: 12.4, y: 135 } },
       { kind: 'line', from: { x: 13.6, y: 126 }, to: { x: 13.6, y: 135 } },
     ]));
