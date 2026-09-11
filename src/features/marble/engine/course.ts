@@ -16,7 +16,7 @@ const LEFT_CORRIDOR = [
   { x: 2, y: 26 }, { x: 9.75, y: 30 }, { x: 9.75, y: 33.5 },
   { x: 1.25, y: 41 }, { x: 1.25, y: 53.75 }, { x: 8.25, y: 58.75 },
   { x: 8.25, y: 63 }, { x: 9.25, y: 64 }, { x: 8.25, y: 65 },
-  { x: 8.25, y: 99.25 }, { x: 15.1, y: 106.75 }, { x: 15.1, y: 111 },
+  { x: 8.25, y: 99.25 }, { x: 13.6, y: 103.5 }, { x: 15.1, y: 105.5 }, { x: 15.1, y: 111 },
 ] as const satisfies readonly CoursePoint[];
 
 const RIGHT_CORRIDOR = [
@@ -24,8 +24,8 @@ const RIGHT_CORRIDOR = [
   { x: 9.5, y: 22.5 }, { x: 17.5, y: 26 }, { x: 17.5, y: 33.5 },
   { x: 24, y: 38.5 }, { x: 19, y: 45.5 }, { x: 19, y: 55.5 },
   { x: 24, y: 59.25 }, { x: 24, y: 63 }, { x: 23, y: 64 },
-  { x: 24, y: 65 }, { x: 24, y: 100.5 }, { x: 16, y: 106.75 },
-  { x: 16, y: 111 },
+  { x: 24, y: 65 }, { x: 24, y: 100.5 }, { x: 17.4, y: 103.5 },
+  { x: 16, y: 105.5 }, { x: 16, y: 111 },
 ] as const satisfies readonly CoursePoint[];
 
 const INNER_LINES = [
@@ -99,35 +99,35 @@ export const NOTME_COURSE: CourseDefinition = {
         {
           kind: 'spinner', id: 'spinner:row-1',
           center: { x: 8, y: 75 },
-          length: 2,
+          length: 4,
           angle: 0,
           angularVelocity: 3.5,
         },
         {
           kind: 'spinner', id: 'spinner:row-2',
           center: { x: 12, y: 75 },
-          length: 2,
+          length: 4,
           angle: 0,
           angularVelocity: -3.5,
         },
         {
           kind: 'spinner', id: 'spinner:row-3',
           center: { x: 16, y: 75 },
-          length: 2,
+          length: 4,
           angle: 0,
           angularVelocity: 3.5,
         },
         {
           kind: 'spinner', id: 'spinner:row-4',
           center: { x: 20, y: 75 },
-          length: 2,
+          length: 4,
           angle: 0,
           angularVelocity: -3.5,
         },
         {
           kind: 'spinner', id: 'spinner:row-5',
           center: { x: 24, y: 75 },
-          length: 2,
+          length: 4,
           angle: 0,
           angularVelocity: 3.5,
         },
@@ -146,8 +146,8 @@ export const NOTME_COURSE: CourseDefinition = {
         ...toLines(RIGHT_CORRIDOR.slice(13)),
         {
           kind: 'spinner', id: 'spinner:finish-gate',
-          center: { x: 14, y: 106.75 },
-          length: 2,
+          center: { x: 13.2, y: 107.75 },
+          length: 4.5,
           angle: 0,
           angularVelocity: -1.2,
         },

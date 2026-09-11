@@ -49,7 +49,7 @@ describe('NOTME_COURSE', () => {
     ]));
   });
 
-  it('참고 맵에 사각 장애물과 회전봉 구조를 둔다', () => {
+  it('구슬을 가로막는 연속 회전봉과 결승 게이트를 둔다', () => {
     const obstacles = NOTME_COURSE.sections.flatMap(({ obstacles }) => obstacles);
     const boxes = obstacles.filter((obstacle): obstacle is Box => obstacle.kind === 'box');
     const spinners = obstacles.filter(isSpinner);
@@ -57,13 +57,20 @@ describe('NOTME_COURSE', () => {
     expect(boxes).toHaveLength(36);
     expect(obstacles.filter(({ kind }) => kind === 'circle')).toHaveLength(0);
     expect(spinners).toMatchObject([
-      { id: 'spinner:row-1', center: { x: 8, y: 75 }, length: 2, angularVelocity: 3.5 },
-      { id: 'spinner:row-2', center: { x: 12, y: 75 }, length: 2, angularVelocity: -3.5 },
-      { id: 'spinner:row-3', center: { x: 16, y: 75 }, length: 2, angularVelocity: 3.5 },
-      { id: 'spinner:row-4', center: { x: 20, y: 75 }, length: 2, angularVelocity: -3.5 },
-      { id: 'spinner:row-5', center: { x: 24, y: 75 }, length: 2, angularVelocity: 3.5 },
-      { id: 'spinner:finish-gate', center: { x: 14, y: 106.75 }, length: 2, angularVelocity: -1.2 },
+      { id: 'spinner:row-1', center: { x: 8, y: 75 }, length: 4, angularVelocity: 3.5 },
+      { id: 'spinner:row-2', center: { x: 12, y: 75 }, length: 4, angularVelocity: -3.5 },
+      { id: 'spinner:row-3', center: { x: 16, y: 75 }, length: 4, angularVelocity: 3.5 },
+      { id: 'spinner:row-4', center: { x: 20, y: 75 }, length: 4, angularVelocity: -3.5 },
+      { id: 'spinner:row-5', center: { x: 24, y: 75 }, length: 4, angularVelocity: 3.5 },
+      { id: 'spinner:finish-gate', center: { x: 13.2, y: 107.75 }, length: 4.5, angularVelocity: -1.2 },
     ]);
+
+    const rowSpinners = spinners.slice(0, 5);
+    for (const [index, spinner] of rowSpinners.entries()) {
+      const next = rowSpinners[index + 1];
+      if (!next) continue;
+      expect(spinner.center.x + spinner.length / 2).toBe(next.center.x - next.length / 2);
+    }
   });
 
   it('참고 맵에 연속 이동벽과 내부 폐쇄 구조물을 둔다', () => {
@@ -78,10 +85,12 @@ describe('NOTME_COURSE', () => {
       { kind: 'line', from: { x: 19, y: 55.5 }, to: { x: 24, y: 59.25 } },
       { kind: 'line', from: { x: 12.75, y: 37.5 }, to: { x: 7, y: 43.5 } },
       { kind: 'line', from: { x: 14.75, y: 43 }, to: { x: 17.5, y: 40.25 } },
-      { kind: 'line', from: { x: 8.25, y: 99.25 }, to: { x: 15.1, y: 106.75 } },
-      { kind: 'line', from: { x: 24, y: 100.5 }, to: { x: 16, y: 106.75 } },
-      { kind: 'line', from: { x: 15.1, y: 106.75 }, to: { x: 15.1, y: 111 } },
-      { kind: 'line', from: { x: 16, y: 106.75 }, to: { x: 16, y: 111 } },
+      { kind: 'line', from: { x: 8.25, y: 99.25 }, to: { x: 13.6, y: 103.5 } },
+      { kind: 'line', from: { x: 13.6, y: 103.5 }, to: { x: 15.1, y: 105.5 } },
+      { kind: 'line', from: { x: 24, y: 100.5 }, to: { x: 17.4, y: 103.5 } },
+      { kind: 'line', from: { x: 17.4, y: 103.5 }, to: { x: 16, y: 105.5 } },
+      { kind: 'line', from: { x: 15.1, y: 105.5 }, to: { x: 15.1, y: 111 } },
+      { kind: 'line', from: { x: 16, y: 105.5 }, to: { x: 16, y: 111 } },
     ]));
     expect(NOTME_COURSE.goalSensor).toEqual({
       from: { x: 15.1, y: 111 },
