@@ -21,7 +21,7 @@ describe('NOTME_COURSE', () => {
   it('다섯 구간과 유효한 골인선을 가진다', () => {
     expect(NOTME_COURSE.width).toBe(26);
     expect(NOTME_COURSE.viewportHeight).toBe(24);
-    expect(NOTME_COURSE.goalY).toBe(135);
+    expect(NOTME_COURSE.goalY).toBe(111);
     expect(NOTME_COURSE.sections.map(({ kind }) => kind)).toEqual([
       'ramps',
       'pins',
@@ -30,7 +30,6 @@ describe('NOTME_COURSE', () => {
       'finish',
     ]);
     expect(validateCourse(NOTME_COURSE)).toEqual([]);
-    expect(NOTME_COURSE.goalY).toBeGreaterThan(NOTME_COURSE.viewportHeight * 5);
     expect(NOTME_COURSE.goalSensor.from.y).toBe(NOTME_COURSE.goalY);
     expect(NOTME_COURSE.goalSensor.to.y).toBe(NOTME_COURSE.goalY);
   });
@@ -50,91 +49,45 @@ describe('NOTME_COURSE', () => {
     ]));
   });
 
-  it('사각 범퍼와 높이별 회전봉이 혼합된 코스다', () => {
+  it('참고 맵에 사각 장애물과 회전봉 구조를 둔다', () => {
     const obstacles = NOTME_COURSE.sections.flatMap(({ obstacles }) => obstacles);
-    const circles = obstacles.filter(({ kind }) => kind === 'circle');
     const boxes = obstacles.filter((obstacle): obstacle is Box => obstacle.kind === 'box');
     const spinners = obstacles.filter(isSpinner);
-    const row = spinners.filter(({ id }) => id.startsWith('spinner:row-'));
 
-    expect(circles.length).toBeLessThanOrEqual(5);
-    expect(boxes.length).toBeGreaterThanOrEqual(18);
-    expect(boxes.some(({ restitution }) => restitution >= 0.7)).toBe(true);
-    expect(spinners).toHaveLength(10);
-    expect(spinners.filter(({ center }) => center.y < 34)).toHaveLength(2);
-    expect(row).toHaveLength(5);
-    expect(new Set(row.map(({ center }) => center.y))).toEqual(new Set([68]));
-    expect(row.map(({ center, length }) => ({ center, length }))).toEqual([
-      { center: { x: 3, y: 68 }, length: 5.5 },
-      { center: { x: 8, y: 68 }, length: 5.5 },
-      { center: { x: 13, y: 68 }, length: 5.5 },
-      { center: { x: 18, y: 68 }, length: 5.5 },
-      { center: { x: 23, y: 68 }, length: 5.5 },
+    expect(boxes).toHaveLength(36);
+    expect(obstacles.filter(({ kind }) => kind === 'circle')).toHaveLength(0);
+    expect(spinners).toMatchObject([
+      { id: 'spinner:row-1', center: { x: 8, y: 75 }, length: 2, angularVelocity: 3.5 },
+      { id: 'spinner:row-2', center: { x: 12, y: 75 }, length: 2, angularVelocity: -3.5 },
+      { id: 'spinner:row-3', center: { x: 16, y: 75 }, length: 2, angularVelocity: 3.5 },
+      { id: 'spinner:row-4', center: { x: 20, y: 75 }, length: 2, angularVelocity: -3.5 },
+      { id: 'spinner:row-5', center: { x: 24, y: 75 }, length: 2, angularVelocity: 3.5 },
+      { id: 'spinner:finish-gate', center: { x: 14, y: 106.75 }, length: 2, angularVelocity: -1.2 },
     ]);
-    expect(spinners.filter(({ center }) => center.y > 76 && center.y < 112)).toHaveLength(2);
   });
 
-  it('외곽 프레임 안에 연속 지그재그 통로와 램프 출구 회전봉을 둔다', () => {
+  it('참고 맵에 연속 이동벽과 내부 폐쇄 구조물을 둔다', () => {
     const obstacles = NOTME_COURSE.sections.flatMap(({ obstacles }) => obstacles);
     const internalWalls = obstacles.filter(isLine);
-    const upperSpinners = obstacles.filter(isSpinner).filter(({ id }) => id.startsWith('spinner:upper-'));
 
     expect(internalWalls).toEqual(expect.arrayContaining([
-      { kind: 'line', from: { x: 0, y: 0 }, to: { x: 4, y: 12 } },
-      { kind: 'line', from: { x: 26, y: 0 }, to: { x: 22, y: 13 } },
-      { kind: 'line', from: { x: 3, y: 62 }, to: { x: 3, y: 76 } },
-      { kind: 'line', from: { x: 23, y: 62 }, to: { x: 23, y: 76 } },
-    ]));
-    expect(upperSpinners).toMatchObject([
-      {
-        id: 'spinner:upper-left',
-        center: { x: 19.5, y: 19.5 },
-        length: 7,
-        angularVelocity: 2.2,
-      },
-      {
-        id: 'spinner:upper-right',
-        center: { x: 7.5, y: 32 },
-        length: 7.5,
-        angularVelocity: -1.8,
-      },
-    ]);
-  });
-
-  it('하단 통로가 좁은 골인 입구로 수렴하고 긴 게이트를 갖는다', () => {
-    const finish = NOTME_COURSE.sections.find(({ kind }) => kind === 'finish');
-    if (!finish) throw new Error('결승 구간이 필요합니다.');
-    const lines = finish.obstacles.filter(isLine);
-    const internalLines = NOTME_COURSE.sections.flatMap(({ obstacles }) => obstacles).filter(isLine);
-    const gate = finish.obstacles.find(
-      (obstacle): obstacle is Spinner => obstacle.kind === 'spinner'
-        && obstacle.id === 'spinner:finish-gate',
-    );
-    if (!gate) throw new Error('결승 게이트가 필요합니다.');
-
-    const goalWidth = Math.abs(NOTME_COURSE.goalSensor.to.x - NOTME_COURSE.goalSensor.from.x);
-    expect(goalWidth).toBeCloseTo(1.2, 5);
-    expect(internalLines).toEqual(expect.arrayContaining([
-      { kind: 'line', from: { x: 3, y: 76 }, to: { x: 3, y: 120 } },
-      { kind: 'line', from: { x: 23, y: 76 }, to: { x: 23, y: 120 } },
-      { kind: 'line', from: { x: 3, y: 120 }, to: { x: 12.4, y: 129.5 } },
-      { kind: 'line', from: { x: 23, y: 120 }, to: { x: 13.6, y: 129.5 } },
-    ]));
-    expect(lines).toEqual(expect.arrayContaining([
-      { kind: 'line', from: { x: 12.4, y: 129.5 }, to: { x: 12.4, y: 135 } },
-      { kind: 'line', from: { x: 13.6, y: 129.5 }, to: { x: 13.6, y: 135 } },
+      { kind: 'line', from: { x: 9.25, y: 0 }, to: { x: 9.25, y: 8.5 } },
+      { kind: 'line', from: { x: 9.25, y: 8.5 }, to: { x: 2, y: 19.25 } },
+      { kind: 'line', from: { x: 16.5, y: 9.25 }, to: { x: 9.5, y: 20 } },
+      { kind: 'line', from: { x: 1.25, y: 53.75 }, to: { x: 8.25, y: 58.75 } },
+      { kind: 'line', from: { x: 19, y: 55.5 }, to: { x: 24, y: 59.25 } },
+      { kind: 'line', from: { x: 12.75, y: 37.5 }, to: { x: 7, y: 43.5 } },
+      { kind: 'line', from: { x: 14.75, y: 43 }, to: { x: 17.5, y: 40.25 } },
+      { kind: 'line', from: { x: 8.25, y: 99.25 }, to: { x: 15.1, y: 106.75 } },
+      { kind: 'line', from: { x: 24, y: 100.5 }, to: { x: 16, y: 106.75 } },
+      { kind: 'line', from: { x: 15.1, y: 106.75 }, to: { x: 15.1, y: 111 } },
+      { kind: 'line', from: { x: 16, y: 106.75 }, to: { x: 16, y: 111 } },
     ]));
     expect(NOTME_COURSE.goalSensor).toEqual({
-      from: { x: 12.4, y: 135 },
-      to: { x: 13.6, y: 135 },
+      from: { x: 15.1, y: 111 },
+      to: { x: 16, y: 111 },
     });
-    expect(gate).toMatchObject({
-      center: { x: 10.9, y: 129.5 },
-      length: 4.5,
-      angle: 0,
-      angularVelocity: -1.2,
-    });
-    expect(gate.length).toBeGreaterThan(goalWidth * 2);
+    expect(NOTME_COURSE.goalSensor.to.x - NOTME_COURSE.goalSensor.from.x).toBeCloseTo(0.9, 5);
   });
 
   it('모든 벽과 장애물의 물리 형상이 코스 경계 안에 있다', () => {
@@ -182,8 +135,8 @@ describe('NOTME_COURSE', () => {
     wrongGoal.goalSensor.from.y -= 1;
 
     const outsideCircle = structuredClone(NOTME_COURSE);
-    const pin = outsideCircle.sections[1].obstacles.find(({ kind }) => kind === 'circle');
-    if (!pin || pin.kind !== 'circle') throw new Error('핀 원형 장애물이 필요합니다.');
+    const pin = { kind: 'circle' as const, center: { x: 1, y: 1 }, radius: 1 };
+    outsideCircle.sections[1].obstacles.push(pin);
     pin.center.x = pin.radius - 0.1;
 
     expect(validateCourse(missingWall)).not.toEqual([]);
@@ -229,8 +182,8 @@ describe('NOTME_COURSE', () => {
 
     for (const radius of invalidCircleRadii) {
       const course = structuredClone(NOTME_COURSE);
-      const pin = course.sections[1].obstacles.find(({ kind }) => kind === 'circle');
-      if (!pin || pin.kind !== 'circle') throw new Error('핀 원형 장애물이 필요합니다.');
+      const pin = { kind: 'circle' as const, center: { x: 1, y: 1 }, radius: 1 };
+      course.sections[1].obstacles.push(pin);
       pin.radius = radius;
 
       expect(validateCourse(course)).toEqual(expect.arrayContaining([
