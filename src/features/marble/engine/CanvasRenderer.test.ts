@@ -194,7 +194,7 @@ describe('CanvasRenderer', () => {
       const [offsetX, offsetY] = main.translate.mock.calls[0];
       const [scale] = main.scale.mock.calls[0];
       expect(offsetX).toBeGreaterThanOrEqual(0.5);
-      expect(offsetX + 26 * scale).toBeLessThanOrEqual(width - 0.5);
+      expect(offsetX + NOTME_COURSE.width * scale).toBeLessThanOrEqual(width - 0.5);
       expect(offsetY + (y - 0.25) * scale).toBeGreaterThanOrEqual(-0.000001);
       expect(offsetY + (y + 0.25) * scale).toBeLessThanOrEqual(height + 0.000001);
       const [left, top, visibleWidth, visibleHeight] = minimap.strokeRect.mock.calls.at(-1)!;
@@ -313,7 +313,7 @@ describe('CanvasRenderer', () => {
   it('미니맵은 26x111 전체를 고정 비율로 fit하고 main camera와 독립적으로 viewport를 그린다', () => {
     const main = createContext(260, 240);
     const minimap = createContext(130, 300);
-    const minimapScale = 300 / NOTME_COURSE.goalY;
+    const minimapScale = Math.min(130 / NOTME_COURSE.width, 300 / NOTME_COURSE.goalY);
     const minimapOffsetX = (130 - NOTME_COURSE.width * minimapScale) / 2;
     const zoomedView: CameraView = { leftX: 6.5, width: 13, centerY: 66, topY: 60, height: 12, zoom: 2 };
     const snapshot = createSnapshot({
