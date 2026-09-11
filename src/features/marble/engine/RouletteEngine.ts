@@ -236,6 +236,10 @@ export class RouletteEngine {
     const remainingIds = this.marbles
       .map(({ id }) => id)
       .filter((id) => this.activeIds.has(id));
+    if (this.winnerMode === 'last' && remainingIds.length === 1) {
+      this.finish(remainingIds[0], true);
+      return;
+    }
     if (this.skillsEnabled) {
       const id = this.skillSystem.update(remainingIds, FIXED_STEP_MS);
       const body = id === null ? null : this.physics.getMarble(id);
@@ -256,18 +260,20 @@ export class RouletteEngine {
     }
   }
 
-  private finish(id: string): void {
+  private finish(id: string, keepBody = false): void {
     if (this.finishedIds.has(id)) return;
     const seed = this.seedById.get(id);
     if (!seed) return;
 
     this.finishedIds.add(id);
-    this.activeIds.delete(id);
     this.stuckTrackers.delete(id);
     this.previousPositions.delete(id);
     this.startPositions.delete(id);
     this.finishOrder.push({ ...seed, rank: this.finishOrder.length + 1 });
-    this.physics.removeMarble(id);
+    if (!keepBody) {
+      this.activeIds.delete(id);
+      this.physics.removeMarble(id);
+    }
   }
 
   private updateStuckTracker(id: string, body: BodySnapshot): void {

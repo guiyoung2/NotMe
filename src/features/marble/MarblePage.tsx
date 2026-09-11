@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { GameShell } from '../../app/GameShell';
@@ -8,8 +8,9 @@ import { MarbleRace } from './MarbleRace';
 import { MarbleResultCourse } from './MarbleResultCourse';
 import { MarbleSetup, type MarbleGameConfig } from './MarbleSetup';
 import { validateMarbleParticipants, type MarbleSeed } from './marbleConfig';
-import { createMarbleColors, marbleLabel } from './marblePresentation';
+import { marbleLabel } from './marblePresentation';
 import type { FinishedMarble, RaceSnapshot } from './engine/RouletteEngine';
+import type { CameraView } from './engine/Camera';
 import './marble.css';
 
 export type MarbleDraft =
@@ -20,7 +21,13 @@ export type MarbleDraft =
 type MarblePageState =
   | { phase: 'setup'; config?: MarbleGameConfig; interrupted: boolean }
   | { phase: 'racing'; config: MarbleGameConfig; session: number }
-  | { phase: 'result'; config: MarbleGameConfig; finishOrder: FinishedMarble[] }
+  | {
+    phase: 'result';
+    config: MarbleGameConfig;
+    finishOrder: FinishedMarble[];
+    snapshot?: RaceSnapshot;
+    cameraView?: CameraView;
+  }
   | { phase: 'error'; config: MarbleGameConfig };
 
 const CONFIG_KEYS = new Set(['participants', 'winnerMode', 'skillsEnabled', 'shuffledMarbles']);
@@ -192,7 +199,9 @@ export function MarblePage(): JSX.Element {
     setPage({ phase: 'racing', config, session });
   }
 
-  function finishRace(session: number, config: MarbleGameConfig, snapshot: RaceSnapshot) {
+  function finishRace(
+    session: number, config: MarbleGameConfig, snapshot: RaceSnapshot, cameraView: CameraView,
+  ) {
     if (activeSession.current !== session) return;
     activeSession.current = null;
     const resultDraft = { phase: 'result', config, finishOrder: snapshot.finishOrder } as const;
@@ -201,7 +210,7 @@ export function MarblePage(): JSX.Element {
       return;
     }
     saveDraft('marble', resultDraft);
-    setPage(resultDraft);
+    setPage({ ...resultDraft, snapshot, cameraView });
   }
 
   function abortRace(session: number, config: MarbleGameConfig) {
@@ -247,7 +256,7 @@ export function MarblePage(): JSX.Element {
         <MarbleRace
           key={page.session}
           config={page.config}
-          onFinish={(snapshot) => finishRace(page.session, page.config, snapshot)}
+          onFinish={(snapshot, cameraView) => finishRace(page.session, page.config, snapshot, cameraView)}
           onAbort={() => abortRace(page.session, page.config)}
           onError={() => failRace(page.session, page.config)}
         />
@@ -255,6 +264,8 @@ export function MarblePage(): JSX.Element {
         <MarbleResult
           config={page.config}
           finishOrder={page.finishOrder}
+          snapshot={page.snapshot}
+          cameraView={page.cameraView}
           onRestart={() => returnToSetup(page.config)}
         />
       ) : (
@@ -282,17 +293,25 @@ export function MarblePage(): JSX.Element {
 type MarbleResultProps = {
   config: MarbleGameConfig;
   finishOrder: FinishedMarble[];
+  snapshot?: RaceSnapshot;
+  cameraView?: CameraView;
   onRestart: () => void;
 };
 
-function MarbleResult({ config, finishOrder, onRestart }: MarbleResultProps): JSX.Element {
+function MarbleResult({
+  config, finishOrder, snapshot, cameraView, onRestart,
+}: MarbleResultProps): JSX.Element {
   const winner = config.winnerMode === 'first' ? finishOrder[0] : finishOrder.at(-1);
   const winnerParticipant = config.participants.find(({ id }) => id === winner?.participantId);
-  const colors = useMemo(() => createMarbleColors(config.shuffledMarbles), [config.shuffledMarbles]);
 
   return (
     <section className="marble-result">
-      <MarbleResultCourse config={config} finishOrder={finishOrder} />
+      <MarbleResultCourse
+        config={config}
+        finishOrder={finishOrder}
+        snapshot={snapshot}
+        cameraView={cameraView}
+      />
       <header className="marble-result__selected">
         <p>{config.winnerMode === 'first' ? '첫 번째' : '마지막'} 도착 구슬</p>
         <h2>{winnerParticipant?.name} 님이 당첨됐어요</h2>
@@ -302,18 +321,6 @@ function MarbleResult({ config, finishOrder, onRestart }: MarbleResultProps): JS
           </strong>
         )}
       </header>
-
-      <ol className="marble-result__ranking" aria-label="전체 도착 순위">
-        {finishOrder.map((marble) => (
-          <li className={marble.id === winner?.id ? 'marble-result__winner-row' : undefined} key={marble.id}>
-            <span>{marble.rank}위</span>
-            <strong>
-              <i className="marble-color" style={{ backgroundColor: colors.get(marble.id) }} aria-hidden="true" />
-              {' '}{marbleLabel(marble)}
-            </strong>
-          </li>
-        ))}
-      </ol>
 
       <button className="button--accent marble-result__restart" type="button" onClick={onRestart}>다시 하기</button>
     </section>

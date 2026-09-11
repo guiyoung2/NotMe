@@ -117,12 +117,11 @@ describe('RouletteEngine 순위', () => {
       .toThrow('구슬 ID가 중복되었습니다: a:0');
   });
 
-  it('이미 도착한 구슬을 중복 기록하지 않고 마지막 구슬도 골인할 때까지 기다린다', async () => {
+  it('마지막 모드에서는 한 구슬만 남으면 골인 전에도 마지막 순위로 확정한다', async () => {
     const physics = new FakePhysics();
     physics.onStep = (step, current) => {
       if (step === 1) Object.assign(current.marbles.get('b:0')!, { x: GOAL_CENTER_X, y: NOTME_COURSE.goalY });
       if (step === 2) Object.assign(current.marbles.get('a:0')!, { x: GOAL_CENTER_X, y: NOTME_COURSE.goalY + 1 });
-      if (step === 3) Object.assign(current.marbles.get('c:0')!, { x: GOAL_CENTER_X, y: NOTME_COURSE.goalY });
     };
     const engine = createEngine(physics);
     await engine.init();
@@ -132,14 +131,11 @@ describe('RouletteEngine 순위', () => {
     expect(engine.snapshot().winner).toBeNull();
 
     engine.advance(10);
-    expect(engine.snapshot().finishOrder.map(({ id }) => id)).toEqual(['b:0', 'a:0']);
-    expect(engine.snapshot().winner).toBeNull();
-    engine.advance(30);
-
     expect(engine.snapshot().finishOrder.map(({ id }) => id)).toEqual(['b:0', 'a:0', 'c:0']);
     expect(engine.snapshot().winner?.id).toBe('c:0');
-    expect(physics.removed).toEqual(['b:0', 'a:0', 'c:0']);
-    expect(physics.stepSeconds).toEqual([0.01, 0.01, 0.01]);
+    expect(engine.snapshot().active.map(({ id }) => id)).toEqual(['c:0']);
+    expect(physics.removed).toEqual(['b:0', 'a:0']);
+    expect(physics.stepSeconds).toEqual([0.01, 0.01]);
   });
 
   it('코스 안에서 골인 y를 교차한 센서 밖 구슬도 골인한다', async () => {

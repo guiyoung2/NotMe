@@ -161,7 +161,9 @@ describe('MarbleRace 수명', () => {
     snapshot = finishedSnapshot;
     act(() => frames.shift()?.(132));
     expect(onFinish).toHaveBeenCalledOnce();
-    expect(onFinish).toHaveBeenCalledWith(finishedSnapshot);
+    expect(onFinish).toHaveBeenCalledWith(finishedSnapshot, {
+      leftX: 0, width: 26, centerY: 12, topY: 0, height: 24, zoom: 1,
+    });
     expect(frames).toHaveLength(0);
   });
 

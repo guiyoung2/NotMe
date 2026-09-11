@@ -34,7 +34,7 @@ export type MarbleRaceRuntimeFactory = (config: MarbleGameConfig) => MarbleRaceR
 
 type MarbleRaceProps = {
   config: MarbleGameConfig;
-  onFinish: (snapshot: RaceSnapshot) => void;
+  onFinish: (snapshot: RaceSnapshot, cameraView: CameraView) => void;
   onAbort: () => void;
   onError: (error: unknown) => void;
   runtimeFactory?: MarbleRaceRuntimeFactory;
@@ -172,7 +172,7 @@ export function MarbleRace({
               activePointerRef.current = null;
               runtime.engine.setFastForward(false);
             }
-            onFinishRef.current(nextSnapshot);
+            onFinishRef.current(nextSnapshot, view);
             return;
           }
 

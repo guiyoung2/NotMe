@@ -7,6 +7,7 @@ import { saveDraft } from '../../shared/draftStorage';
 import type { MarbleRace as MarbleRaceComponent } from './MarbleRace';
 import type { MarbleGameConfig } from './MarbleSetup';
 import type { RaceSnapshot } from './engine/RouletteEngine';
+import type { CameraView } from './engine/Camera';
 
 type RaceProps = Parameters<typeof MarbleRaceComponent>[0];
 const raceSessions: RaceProps[] = [];
@@ -16,7 +17,7 @@ vi.mock('./MarbleRace', () => ({
     raceSessions.push(props);
     return (
       <section aria-label="가짜 마블 레이스">
-        <button type="button" onClick={() => props.onFinish(createFinishedSnapshot(props.config))}>완주시키기</button>
+        <button type="button" onClick={() => props.onFinish(createFinishedSnapshot(props.config), resultCamera)}>완주시키기</button>
         <button type="button" onClick={() => props.onAbort()}>중단시키기</button>
         <button type="button" onClick={() => props.onError(new Error('WASM 실패'))}>실패시키기</button>
       </section>
@@ -38,6 +39,10 @@ const config: MarbleGameConfig = {
     { id: 'b:0', participantId: 'b', name: '짱구' },
     { id: 'a:0', participantId: 'a', name: '짱구' },
   ],
+};
+
+const resultCamera: CameraView = {
+  leftX: 0, width: 26, centerY: 12, topY: 0, height: 24, zoom: 1,
 };
 
 function createFinishedSnapshot(gameConfig: MarbleGameConfig): RaceSnapshot {
@@ -145,7 +150,7 @@ describe('isMarbleDraft', () => {
 });
 
 describe('MarblePage', () => {
-  it.each(['완주 직후', 'draft 복구'] as const)('%s에도 맵 → 도착 명단 → 당첨 결과를 표시하고 같은 구슬 색상을 유지한다', async (phase) => {
+  it.each(['완주 직후', 'draft 복구'] as const)('%s에도 맵 → 도착 명단 → 당첨 결과를 표시한다', async (phase) => {
     if (phase === '완주 직후') {
       const user = userEvent.setup();
       await startConfiguredRace(user);
@@ -162,16 +167,12 @@ describe('MarblePage', () => {
     expect(screen.getByLabelText('도착 진행')).toHaveTextContent('도착 3 / 3');
     expect(arrivals).toHaveTextContent('1위 짱구 2번 구슬');
     expect(document.body).not.toHaveTextContent(/a:0|a:1|b:0|_r_.*participant/);
-    const ranking = screen.getByRole('list', { name: '전체 도착 순위' });
-    const arrivalColors = Array.from(arrivals.querySelectorAll<HTMLElement>('.marble-color')).map((dot) => dot.style.backgroundColor);
-    const resultColors = Array.from(ranking.querySelectorAll<HTMLElement>('.marble-color')).map((dot) => dot.style.backgroundColor);
-    expect(new Set(arrivalColors).size).toBe(3);
-    expect(resultColors).toEqual(arrivalColors);
+    expect(screen.queryByRole('list', { name: '전체 도착 순위' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '레이스 중단' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '다시 하기' })).toBeInTheDocument();
   });
 
-  it('설정부터 완주해 첫 번째 당첨자와 당첨 구슬, 전체 순위를 표시한다', async () => {
+  it('설정부터 완주해 첫 번째 당첨자와 당첨 구슬만 표시한다', async () => {
     const user = userEvent.setup();
     await startConfiguredRace(user);
 
@@ -181,9 +182,7 @@ describe('MarblePage', () => {
     expect(screen.getByRole('heading', { name: '짱구 님이 당첨됐어요' })).toBeInTheDocument();
     expect(screen.getByText('짱구 2번 구슬', { selector: '.marble-result__winner-marble' }))
       .toBeInTheDocument();
-    const ranking = screen.getByRole('list', { name: '전체 도착 순위' });
-    expect(within(ranking).getAllByRole('listitem')).toHaveLength(3);
-    expect(within(ranking).getAllByText('짱구 1번 구슬')).toHaveLength(2);
+    expect(screen.queryByRole('list', { name: '전체 도착 순위' })).not.toBeInTheDocument();
     expect(readDraft()).toEqual({
       phase: 'result',
       config,
@@ -255,7 +254,7 @@ describe('MarblePage', () => {
     expect(screen.queryByText('진행 중이던 레이스는 다시 시작해 주세요')).not.toBeInTheDocument();
   });
 
-  it('result draft에서 당첨 구슬과 전체 순위를 복구한다', () => {
+  it('result draft에서 당첨 구슬과 도착 명단을 복구한다', () => {
     saveDraft('marble', {
       phase: 'result',
       config,
@@ -264,7 +263,7 @@ describe('MarblePage', () => {
     renderPage();
 
     expect(screen.getByRole('heading', { name: '짱구 님이 당첨됐어요' })).toBeInTheDocument();
-    expect(within(screen.getByRole('list', { name: '전체 도착 순위' })).getAllByRole('listitem')).toHaveLength(3);
+    expect(within(screen.getByRole('list', { name: '도착 명단' })).getAllByRole('listitem')).toHaveLength(3);
   });
 
   it('손상된 draft를 삭제하고 빈 설정으로 복구한다', () => {
@@ -302,7 +301,7 @@ describe('MarblePage', () => {
     await user.click(screen.getByRole('button', { name: '중단시키기' }));
 
     expect(screen.getByLabelText('참가자 1 이름')).toHaveValue('짱구');
-    staleSession?.onFinish(createFinishedSnapshot(config));
+    staleSession?.onFinish(createFinishedSnapshot(config), resultCamera);
     staleSession?.onError(new Error('늦은 오류'));
 
     expect(screen.getByLabelText('참가자 1 이름')).toBeInTheDocument();
@@ -316,7 +315,7 @@ describe('MarblePage', () => {
     const failedSession = raceSessions[0];
     await user.click(screen.getByRole('button', { name: '실패시키기' }));
 
-    failedSession?.onFinish(createFinishedSnapshot(config));
+    failedSession?.onFinish(createFinishedSnapshot(config), resultCamera);
     expect(screen.getByRole('heading', { name: '룰렛을 불러오지 못했어요' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '다시 시도' }));
@@ -326,7 +325,7 @@ describe('MarblePage', () => {
 
     await user.click(screen.getByRole('button', { name: '초기화' }));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '초기화' }));
-    resetSession?.onFinish(createFinishedSnapshot(config));
+    resetSession?.onFinish(createFinishedSnapshot(config), resultCamera);
     resetSession?.onError(new Error('늦은 오류'));
 
     expect(screen.getByLabelText('참가자 1 이름')).toHaveValue('');

@@ -3,15 +3,20 @@ import { useEffect, useRef, type JSX } from 'react';
 import { MarbleArrivals } from './MarbleArrivals';
 import type { MarbleGameConfig } from './MarbleSetup';
 import { CanvasRenderer } from './engine/CanvasRenderer';
+import type { CameraView } from './engine/Camera';
 import { NOTME_COURSE } from './engine/course';
 import type { FinishedMarble, RaceSnapshot } from './engine/RouletteEngine';
 
 type MarbleResultCourseProps = {
   config: MarbleGameConfig;
   finishOrder: FinishedMarble[];
+  snapshot?: RaceSnapshot;
+  cameraView?: CameraView;
 };
 
-export function MarbleResultCourse({ config, finishOrder }: MarbleResultCourseProps): JSX.Element {
+export function MarbleResultCourse({
+  config, finishOrder, snapshot, cameraView,
+}: MarbleResultCourseProps): JSX.Element {
   const mainRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
 
@@ -20,8 +25,8 @@ export function MarbleResultCourse({ config, finishOrder }: MarbleResultCoursePr
     const minimap = minimapRef.current!.getContext('2d');
     if (!main || !minimap) return;
     const renderer = new CanvasRenderer(NOTME_COURSE, config.shuffledMarbles);
-    // 완주·복구 모두 물리 body 없이 전체 코스를 정적으로 표시한다.
-    const snapshot: RaceSnapshot = {
+    // 새로고침으로 복구한 결과만 전체 코스 정적 화면으로 대체한다.
+    const fallbackSnapshot: RaceSnapshot = {
       active: [],
       skillEffects: [],
       skillActivationCount: 0,
@@ -40,19 +45,20 @@ export function MarbleResultCourse({ config, finishOrder }: MarbleResultCoursePr
       const scale = Math.min(width / (NOTME_COURSE.width + 1), height / (NOTME_COURSE.goalY + 2));
       const viewHeight = height / scale;
       const viewWidth = width / scale;
-      renderer.render({ main, minimap }, snapshot, {
+      const fallbackView: CameraView = {
         leftX: (NOTME_COURSE.width - viewWidth) / 2,
         width: viewWidth,
         centerY: NOTME_COURSE.goalY / 2,
         topY: (NOTME_COURSE.goalY - viewHeight) / 2,
         height: viewHeight,
         zoom: 1,
-      });
+      };
+      renderer.render({ main, minimap }, snapshot ?? fallbackSnapshot, cameraView ?? fallbackView);
     };
     draw();
     window.addEventListener('resize', draw);
     return () => window.removeEventListener('resize', draw);
-  }, [config, finishOrder]);
+  }, [cameraView, config, finishOrder, snapshot]);
 
   return (
     <div className="marble-race__stage marble-result__course">
