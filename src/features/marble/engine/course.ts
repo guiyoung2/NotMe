@@ -7,6 +7,22 @@ const B = (
   angle: number, restitution = 0.15,
 ): BoxObstacle => ({ kind: 'box', center: { x, y }, width, height, angle, restitution });
 
+const toLines = (points: readonly CoursePoint[]): LineObstacle[] => points.slice(1).map((to, index) => ({
+  kind: 'line', from: points[index], to,
+}));
+
+const LEFT_CORRIDOR = [
+  { x: 0, y: 0 }, { x: 4, y: 12 }, { x: 2, y: 24 }, { x: 5.5, y: 32 },
+  { x: 2.5, y: 43 }, { x: 2.5, y: 57 }, { x: 3, y: 62 }, { x: 3, y: 76 },
+  { x: 1.5, y: 86 }, { x: 4.5, y: 96 }, { x: 2, y: 106 }, { x: 0, y: 108 },
+] as const satisfies readonly CoursePoint[];
+
+const RIGHT_CORRIDOR = [
+  { x: 26, y: 0 }, { x: 22, y: 13 }, { x: 24, y: 25 }, { x: 20.5, y: 34 },
+  { x: 24, y: 45 }, { x: 23.5, y: 57 }, { x: 23, y: 62 }, { x: 23, y: 76 },
+  { x: 24.5, y: 87 }, { x: 21.5, y: 97 }, { x: 24, y: 107 }, { x: 26, y: 108 },
+] as const satisfies readonly CoursePoint[];
+
 export const NOTME_COURSE: CourseDefinition = {
   width: 26,
   viewportHeight: 24,
@@ -20,20 +36,22 @@ export const NOTME_COURSE: CourseDefinition = {
     {
       kind: 'ramps',
       obstacles: [
-        { kind: 'line', from: { x: 2, y: 8 }, to: { x: 15, y: 13 } },
-        { kind: 'line', from: { x: 24, y: 18 }, to: { x: 11, y: 24 } },
+        ...toLines(LEFT_CORRIDOR.slice(0, 4)),
+        ...toLines(RIGHT_CORRIDOR.slice(0, 4)),
+        { kind: 'line', from: { x: 4, y: 12 }, to: { x: 17.1, y: 17.1 } },
+        { kind: 'line', from: { x: 24, y: 25 }, to: { x: 10, y: 30 } },
         {
           kind: 'spinner', id: 'spinner:upper-left',
-          center: { x: 6.5, y: 18 },
-          length: 6,
-          angle: 0.2,
+          center: { x: 19.5, y: 19.5 },
+          length: 7,
+          angle: 0.15,
           angularVelocity: 2.2,
         },
         {
           kind: 'spinner', id: 'spinner:upper-right',
-          center: { x: 19, y: 29 },
-          length: 5.5,
-          angle: -0.5,
+          center: { x: 7.5, y: 32 },
+          length: 7.5,
+          angle: -0.2,
           angularVelocity: -1.8,
         },
       ],
@@ -41,25 +59,26 @@ export const NOTME_COURSE: CourseDefinition = {
     {
       kind: 'pins',
       obstacles: [
-        B(3.0, 35, 1.0, 1.0, Math.PI / 4, 0.8),
-        B(7.5, 36, 2.0, 0.35, -0.35),
-        B(12.5, 34.5, 1.0, 1.0, Math.PI / 4, 0.2),
-        B(17.0, 36.5, 2.2, 0.35, 0.3),
-        B(22.5, 35, 1.0, 1.0, Math.PI / 4, 0.8),
-        B(5.0, 42, 2.2, 0.35, 0.35),
-        B(9.5, 43, 1.0, 1.0, Math.PI / 4, 0.75),
-        B(14.5, 42, 2.0, 0.35, -0.3),
-        B(19.5, 43.5, 1.0, 1.0, Math.PI / 4, 0.2),
-        B(23.0, 42, 1.8, 0.35, -0.4),
-        B(2.5, 49, 1.0, 1.0, Math.PI / 4, 0.75),
-        B(7.0, 50, 2.4, 0.35, -0.3),
-        B(12.0, 49, 1.0, 1.0, Math.PI / 4, 0.2),
-        B(17.0, 50.5, 2.2, 0.35, 0.35),
-        B(22.5, 49, 1.0, 1.0, Math.PI / 4, 0.75),
-        B(5.0, 56, 2.6, 0.35, 0.25),
-        B(10.5, 56.5, 1.0, 1.0, Math.PI / 4, 0.2),
-        B(16.0, 55.5, 2.6, 0.35, -0.25),
-        B(21.5, 56.5, 1.0, 1.0, Math.PI / 4, 0.8),
+        ...toLines(LEFT_CORRIDOR.slice(3, 7)),
+        ...toLines(RIGHT_CORRIDOR.slice(3, 7)),
+        B(6, 35, 1, 1, Math.PI / 4, 0.8),
+        B(10, 36, 2, 0.35, -0.35),
+        B(14, 34.5, 1, 1, Math.PI / 4),
+        B(18, 36.5, 2.2, 0.35, 0.3, 0.8),
+        B(4.5, 42, 2.2, 0.35, 0.35),
+        B(8, 43, 1, 1, Math.PI / 4, 0.75),
+        B(12.5, 42, 2, 0.35, -0.3),
+        B(17, 43.5, 1, 1, Math.PI / 4),
+        B(21.5, 42, 1.8, 0.35, -0.4, 0.8),
+        B(5, 49, 1, 1, Math.PI / 4, 0.75),
+        B(9.5, 50, 2.4, 0.35, -0.3),
+        B(14, 49, 1, 1, Math.PI / 4),
+        B(18.5, 50.5, 2.2, 0.35, 0.35),
+        B(22, 49, 1, 1, Math.PI / 4, 0.75),
+        B(6, 56, 2.6, 0.35, 0.25),
+        B(11, 56.5, 1, 1, Math.PI / 4),
+        B(16, 55.5, 2.6, 0.35, -0.25),
+        B(21, 56.5, 1, 1, Math.PI / 4, 0.8),
         { kind: 'circle', center: { x: 13, y: 39 }, radius: 0.35 },
         { kind: 'circle', center: { x: 4, y: 54 }, radius: 0.35 },
         { kind: 'circle', center: { x: 23, y: 54 }, radius: 0.35 },
@@ -68,6 +87,8 @@ export const NOTME_COURSE: CourseDefinition = {
     {
       kind: 'spinner',
       obstacles: [
+        ...toLines(LEFT_CORRIDOR.slice(6, 8)),
+        ...toLines(RIGHT_CORRIDOR.slice(6, 8)),
         {
           kind: 'spinner', id: 'spinner:row-1',
           center: { x: 3, y: 68 },
@@ -108,6 +129,8 @@ export const NOTME_COURSE: CourseDefinition = {
     {
       kind: 'fork',
       obstacles: [
+        ...toLines(LEFT_CORRIDOR.slice(7)),
+        ...toLines(RIGHT_CORRIDOR.slice(7)),
         {
           kind: 'spinner', id: 'spinner:lower-left',
           center: { x: 7, y: 83 },
@@ -117,7 +140,7 @@ export const NOTME_COURSE: CourseDefinition = {
         },
         B(16, 80, 2.2, 0.35, -0.3, 0.2),
         B(22, 87, 1.0, 1.0, Math.PI / 4, 0.75),
-        { kind: 'line', from: { x: 2, y: 90 }, to: { x: 7, y: 94 } },
+        { kind: 'line', from: { x: 4, y: 90 }, to: { x: 8, y: 94 } },
         B(12.5, 95, 2.4, 0.35, 0.25, 0.2),
         {
           kind: 'spinner', id: 'spinner:lower-right',
@@ -142,10 +165,10 @@ export const NOTME_COURSE: CourseDefinition = {
         { kind: 'line', from: { x: 19.5, y: 119 }, to: { x: 13.6, y: 126 } },
         {
           kind: 'spinner', id: 'spinner:finish-gate',
-          center: { x: 11.75, y: 125.2 },
+          center: { x: 14.25, y: 125.2 },
           length: 5.5,
           angle: 0,
-          angularVelocity: 1.2,
+          angularVelocity: -1.2,
         },
         { kind: 'line', from: { x: 12.4, y: 126 }, to: { x: 12.4, y: 135 } },
         { kind: 'line', from: { x: 13.6, y: 126 }, to: { x: 13.6, y: 135 } },
