@@ -62,7 +62,7 @@ describe('NOTME_COURSE', () => {
       { id: 'spinner:row-3', center: { x: 16, y: 75 }, length: 4, angularVelocity: 3.5 },
       { id: 'spinner:row-4', center: { x: 20, y: 75 }, length: 4, angularVelocity: -3.5 },
       { id: 'spinner:row-5', center: { x: 24, y: 75 }, length: 4, angularVelocity: 3.5 },
-      { id: 'spinner:finish-gate', center: { x: 13.2, y: 107.75 }, length: 4.5, angularVelocity: -1.2 },
+      { id: 'spinner:finish-gate', center: { x: 14, y: 106.75 }, length: 4, angularVelocity: -1.2 },
     ]);
 
     const rowSpinners = spinners.slice(0, 5);
@@ -85,12 +85,10 @@ describe('NOTME_COURSE', () => {
       { kind: 'line', from: { x: 19, y: 55.5 }, to: { x: 24, y: 59.25 } },
       { kind: 'line', from: { x: 12.75, y: 37.5 }, to: { x: 7, y: 43.5 } },
       { kind: 'line', from: { x: 14.75, y: 43 }, to: { x: 17.5, y: 40.25 } },
-      { kind: 'line', from: { x: 8.25, y: 99.25 }, to: { x: 13.6, y: 103.5 } },
-      { kind: 'line', from: { x: 13.6, y: 103.5 }, to: { x: 15.1, y: 105.5 } },
-      { kind: 'line', from: { x: 24, y: 100.5 }, to: { x: 17.4, y: 103.5 } },
-      { kind: 'line', from: { x: 17.4, y: 103.5 }, to: { x: 16, y: 105.5 } },
-      { kind: 'line', from: { x: 15.1, y: 105.5 }, to: { x: 15.1, y: 111 } },
-      { kind: 'line', from: { x: 16, y: 105.5 }, to: { x: 16, y: 111 } },
+      { kind: 'line', from: { x: 8.25, y: 99.25 }, to: { x: 15.1, y: 106.75 } },
+      { kind: 'line', from: { x: 24, y: 100.5 }, to: { x: 16, y: 106.75 } },
+      { kind: 'line', from: { x: 15.1, y: 106.75 }, to: { x: 15.1, y: 111 } },
+      { kind: 'line', from: { x: 16, y: 106.75 }, to: { x: 16, y: 111 } },
     ]));
     expect(NOTME_COURSE.goalSensor).toEqual({
       from: { x: 15.1, y: 111 },
