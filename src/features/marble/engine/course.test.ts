@@ -115,22 +115,22 @@ describe('NOTME_COURSE', () => {
     const goalWidth = Math.abs(NOTME_COURSE.goalSensor.to.x - NOTME_COURSE.goalSensor.from.x);
     expect(goalWidth).toBeCloseTo(1.2, 5);
     expect(internalLines).toEqual(expect.arrayContaining([
-      { kind: 'line', from: { x: 5, y: 86 }, to: { x: 5, y: 108 } },
-      { kind: 'line', from: { x: 22, y: 87 }, to: { x: 22, y: 108 } },
-      { kind: 'line', from: { x: 5, y: 108 }, to: { x: 12.4, y: 118 } },
-      { kind: 'line', from: { x: 22, y: 108 }, to: { x: 13.6, y: 118 } },
+      { kind: 'line', from: { x: 3, y: 76 }, to: { x: 3, y: 120 } },
+      { kind: 'line', from: { x: 23, y: 76 }, to: { x: 23, y: 120 } },
+      { kind: 'line', from: { x: 3, y: 120 }, to: { x: 12.4, y: 129.5 } },
+      { kind: 'line', from: { x: 23, y: 120 }, to: { x: 13.6, y: 129.5 } },
     ]));
     expect(lines).toEqual(expect.arrayContaining([
-      { kind: 'line', from: { x: 12.4, y: 118 }, to: { x: 12.4, y: 135 } },
-      { kind: 'line', from: { x: 13.6, y: 118 }, to: { x: 13.6, y: 135 } },
+      { kind: 'line', from: { x: 12.4, y: 129.5 }, to: { x: 12.4, y: 135 } },
+      { kind: 'line', from: { x: 13.6, y: 129.5 }, to: { x: 13.6, y: 135 } },
     ]));
     expect(NOTME_COURSE.goalSensor).toEqual({
       from: { x: 12.4, y: 135 },
       to: { x: 13.6, y: 135 },
     });
     expect(gate).toMatchObject({
-      center: { x: 11.25, y: 118 },
-      length: 3,
+      center: { x: 10.9, y: 129.5 },
+      length: 4.5,
       angle: 0,
       angularVelocity: -1.2,
     });

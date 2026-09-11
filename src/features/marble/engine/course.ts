@@ -14,13 +14,13 @@ const toLines = (points: readonly CoursePoint[]): LineObstacle[] => points.slice
 const LEFT_CORRIDOR = [
   { x: 0, y: 0 }, { x: 4, y: 12 }, { x: 2, y: 24 }, { x: 5.5, y: 32 },
   { x: 2.5, y: 43 }, { x: 2.5, y: 57 }, { x: 3, y: 62 }, { x: 3, y: 76 },
-  { x: 5, y: 86 }, { x: 5, y: 108 }, { x: 12.4, y: 118 },
+  { x: 3, y: 120 }, { x: 12.4, y: 129.5 },
 ] as const satisfies readonly CoursePoint[];
 
 const RIGHT_CORRIDOR = [
   { x: 26, y: 0 }, { x: 22, y: 13 }, { x: 24, y: 25 }, { x: 20.5, y: 34 },
   { x: 24, y: 45 }, { x: 23.5, y: 57 }, { x: 23, y: 62 }, { x: 23, y: 76 },
-  { x: 22, y: 87 }, { x: 22, y: 108 }, { x: 13.6, y: 118 },
+  { x: 23, y: 120 }, { x: 13.6, y: 129.5 },
 ] as const satisfies readonly CoursePoint[];
 
 export const NOTME_COURSE: CourseDefinition = {
@@ -159,13 +159,13 @@ export const NOTME_COURSE: CourseDefinition = {
       obstacles: [
         {
           kind: 'spinner', id: 'spinner:finish-gate',
-          center: { x: 11.25, y: 118 },
-          length: 3,
+          center: { x: 10.9, y: 129.5 },
+          length: 4.5,
           angle: 0,
           angularVelocity: -1.2,
         },
-        { kind: 'line', from: { x: 12.4, y: 118 }, to: { x: 12.4, y: 135 } },
-        { kind: 'line', from: { x: 13.6, y: 118 }, to: { x: 13.6, y: 135 } },
+        { kind: 'line', from: { x: 12.4, y: 129.5 }, to: { x: 12.4, y: 135 } },
+        { kind: 'line', from: { x: 13.6, y: 129.5 }, to: { x: 13.6, y: 135 } },
       ],
     },
   ],
