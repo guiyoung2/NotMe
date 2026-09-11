@@ -5,9 +5,10 @@ import type { BodySnapshot, CoursePoint, DynamicObstacleSnapshot, PhysicsAdapter
 
 const FIXED_STEP_MS = 10;
 const MAX_REAL_DELTA_MS = 100;
+const START_COLUMNS = 10;
 const START_HORIZONTAL_GAP = 0.6;
 const START_VERTICAL_GAP = 0.6;
-const START_MARGIN_X = 1;
+const START_X = 10.25;
 const START_Y = 1;
 const STUCK_DURATION_MS = 3_000;
 const STUCK_MOVEMENT_THRESHOLD = 0.1;
@@ -294,18 +295,10 @@ export class RouletteEngine {
 }
 
 function createStartPositions(count: number): Array<{ x: number; y: number }> {
-  const usableWidth = NOTME_COURSE.width - START_MARGIN_X * 2;
-  const columns = Math.max(1, Math.floor(usableWidth / START_HORIZONTAL_GAP) + 1);
-
   return Array.from({ length: count }, (_, index) => {
-    const row = Math.floor(index / columns);
-    const column = index % columns;
-    const rowCount = Math.min(columns, count - row * columns);
-    const rowWidth = (rowCount - 1) * START_HORIZONTAL_GAP;
-
     return {
-      x: (NOTME_COURSE.width - rowWidth) / 2 + column * START_HORIZONTAL_GAP,
-      y: START_Y + row * START_VERTICAL_GAP,
+      x: START_X + index % START_COLUMNS * START_HORIZONTAL_GAP,
+      y: START_Y + Math.floor(index / START_COLUMNS) * START_VERTICAL_GAP,
     };
   });
 }

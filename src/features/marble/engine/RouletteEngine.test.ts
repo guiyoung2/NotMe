@@ -142,7 +142,7 @@ describe('RouletteEngine 순위', () => {
     expect(physics.stepSeconds).toEqual([0.01, 0.01, 0.01]);
   });
 
-  it('같은 y를 교차해도 중앙 센서를 지난 구슬만 골인한다', async () => {
+  it('코스 안에서 골인 y를 교차한 센서 밖 구슬도 골인한다', async () => {
     const physics = new FakePhysics();
     physics.onStep = (step, current) => {
       const y = step === 1 ? NOTME_COURSE.goalY - 1 : NOTME_COURSE.goalY + 1;
@@ -157,9 +157,25 @@ describe('RouletteEngine 순위', () => {
 
     expect(engine.snapshot().finishOrder).toEqual([
       { id: 'b:0', participantId: 'b', name: '철수', rank: 1 },
+      { id: 'a:0', participantId: 'a', name: '짱구', rank: 2 },
+      { id: 'c:0', participantId: 'c', name: '유리', rank: 3 },
     ]);
-    expect(physics.getMarble('a:0')).toEqual({ id: 'a:0', x: 13, y: 1, angle: 0, radius: 0.25 });
-    expect(physics.getMarble('c:0')).toEqual({ id: 'c:0', x: 13.6, y: 1, angle: 0, radius: 0.25 });
+    expect(physics.removed).toEqual(['b:0', 'a:0', 'c:0']);
+  });
+
+  it.each([5, 21, 0.1])('센서 밖 x=%s라도 코스 안에서 골인 y를 교차하면 기록한다', async (x) => {
+    const physics = new FakePhysics();
+    physics.onStep = (step, current) => {
+      if (step === 1) Object.assign(current.marbles.get('b:0')!, { x, y: NOTME_COURSE.goalY });
+    };
+    const engine = createEngine(physics);
+    await engine.init();
+
+    engine.advance(10);
+
+    expect(engine.snapshot().finishOrder).toEqual([
+      { id: 'b:0', participantId: 'b', name: '철수', rank: 1 },
+    ]);
   });
 
   it('전체 순위가 확정된 뒤에만 first 당첨자를 공개한다', async () => {
@@ -183,8 +199,8 @@ describe('RouletteEngine 순위', () => {
     { x: -1, y: NOTME_COURSE.goalY + 1 },
     { x: NOTME_COURSE.width + 1, y: NOTME_COURSE.goalY + 1 },
     { x: GOAL_CENTER_X, y: -1 },
-    { x: 0.1, y: NOTME_COURSE.goalY + 1 },
-  ])('코스 밖 또는 골인 폭 밖 위치 ($x, $y)는 기록하지 않고 원래 시작 위치로 복구한다', async (position) => {
+    { x: Number.NaN, y: NOTME_COURSE.goalY },
+  ])('코스 밖 또는 비유한 위치 ($x, $y)는 기록하지 않고 원래 시작 위치로 복구한다', async (position) => {
     const physics = new FakePhysics();
     const engine = createEngine(physics);
     await engine.init();
@@ -315,7 +331,7 @@ describe('RouletteEngine 스킬과 정체 해소', () => {
     expect(random).toHaveBeenCalledTimes(3);
     expect(physics.impacted).toEqual(['a:0']);
     expect(engine.snapshot().skillEffects).toEqual([
-      { id: 1, center: { x: 13, y: 1 }, elapsedMs: 0, durationMs: 500 },
+      { id: 1, center: { x: 10.85, y: 1 }, elapsedMs: 0, durationMs: 500 },
     ]);
     expect(engine.snapshot().skillActivationCount).toBe(1);
     advanceSteps(engine, 799);
@@ -324,7 +340,7 @@ describe('RouletteEngine 스킬과 정체 해소', () => {
     expect(physics.impacted).toEqual(['a:0', 'b:0']);
     expect(engine.snapshot().skillActivationCount).toBe(2);
     expect(engine.snapshot().skillEffects).toEqual([
-      { id: 2, center: { x: 12.4, y: 1 }, elapsedMs: 0, durationMs: 500 },
+      { id: 2, center: { x: 10.25, y: 1 }, elapsedMs: 0, durationMs: 500 },
     ]);
   });
 
@@ -340,7 +356,7 @@ describe('RouletteEngine 스킬과 정체 해소', () => {
     advanceSteps(engine, 49);
     engine.advance(9);
     expect(engine.snapshot().skillEffects).toEqual([
-      { id: 1, center: { x: 12.4, y: 1 }, elapsedMs: 490, durationMs: 500 },
+      { id: 1, center: { x: 10.25, y: 1 }, elapsedMs: 490, durationMs: 500 },
     ]);
     engine.advance(1);
     expect(engine.snapshot().skillEffects).toEqual([]);
@@ -446,7 +462,7 @@ describe('RouletteEngine snapshot과 수명', () => {
 
     expect(physics.getMarble('b:0')).toEqual({
       id: 'b:0',
-      x: 12.4,
+      x: 10.25,
       y: 1,
       angle: 0,
       radius: 0.25,
@@ -458,7 +474,7 @@ describe('RouletteEngine snapshot과 수명', () => {
       length: 9,
       angle: 1.5,
     });
-    expect(engine.snapshot().active[0].body.x).toBe(12.4);
+    expect(engine.snapshot().active[0].body.x).toBe(10.25);
     expect(engine.snapshot().dynamicObstacles[0]).toMatchObject({
       center: { x: 13, y: 56 },
       angle: 1.5,
@@ -496,7 +512,7 @@ describe('RouletteEngine snapshot과 수명', () => {
     });
   });
 
-  it('100개 구슬을 외벽 안쪽의 겹치지 않는 결정적 multi-row로 배치한다', async () => {
+  it('100개 구슬을 첫 통로 안의 겹치지 않는 10열로 배치한다', async () => {
     const hundredSeeds = Array.from({ length: 100 }, (_, index): MarbleSeed => ({
       id: `a:${index}`,
       participantId: 'a',
@@ -506,16 +522,20 @@ describe('RouletteEngine snapshot과 수명', () => {
     const engine = createEngine(physics, { marbles: hundredSeeds });
     await engine.init();
 
-    expect(new Set(physics.created.map(({ y }) => y)).size).toBeGreaterThan(1);
-    for (const marble of physics.created) {
-      expect(marble.x).toBeGreaterThanOrEqual(0.25);
-      expect(marble.x).toBeLessThanOrEqual(NOTME_COURSE.width - 0.25);
+    expect(physics.created).toHaveLength(100);
+    for (const [index, marble] of physics.created.entries()) {
+      expect(marble.x).toBeCloseTo(10.25 + index % 10 * 0.6, 5);
+      expect(marble.y).toBeCloseTo(1 + Math.floor(index / 10) * 0.6, 5);
+      expect(marble.x).toBeGreaterThanOrEqual(10.25);
+      expect(marble.x).toBeLessThanOrEqual(15.65);
+      expect(marble.y).toBeGreaterThanOrEqual(0.25);
+      expect(marble.y).toBeLessThanOrEqual(8.25);
     }
     for (let left = 0; left < physics.created.length; left += 1) {
       for (let right = left + 1; right < physics.created.length; right += 1) {
         const first = physics.created[left];
         const second = physics.created[right];
-        expect(Math.hypot(first.x - second.x, first.y - second.y)).toBeGreaterThan(0.5);
+        expect(Math.hypot(first.x - second.x, first.y - second.y)).toBeGreaterThanOrEqual(0.5);
       }
     }
   });
