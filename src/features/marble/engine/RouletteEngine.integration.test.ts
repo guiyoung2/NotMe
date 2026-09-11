@@ -46,8 +46,8 @@ async function runHundredMarbles(seed: number, skillsEnabled: boolean) {
       expect(body.x).toBeLessThanOrEqual(NOTME_COURSE.width);
       const crossingX = before.x + (body.x - before.x)
         * (NOTME_COURSE.goalY - before.y) / (body.y - before.y);
-      expect(crossingX).toBeGreaterThanOrEqual(NOTME_COURSE.goalSensor.from.x + body.radius);
-      expect(crossingX).toBeLessThanOrEqual(NOTME_COURSE.goalSensor.to.x - body.radius);
+      expect(crossingX).toBeGreaterThanOrEqual(0);
+      expect(crossingX).toBeLessThanOrEqual(NOTME_COURSE.width);
       crossings.add(id);
     }
     remove(id);

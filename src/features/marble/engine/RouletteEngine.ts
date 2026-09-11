@@ -215,9 +215,8 @@ export class RouletteEngine {
       const crossingX = crossing
         ? previous.x + (body.x - previous.x) * (NOTME_COURSE.goalY - previous.y) / (body.y - previous.y)
         : Number.NaN;
-      const goalLeft = Math.min(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
-      const goalRight = Math.max(NOTME_COURSE.goalSensor.from.x, NOTME_COURSE.goalSensor.to.x);
-      if (insideCourse && crossing && crossingX >= goalLeft + body.radius && crossingX <= goalRight - body.radius) {
+      const crossedInsideCourse = crossing && crossingX >= 0 && crossingX <= NOTME_COURSE.width;
+      if (insideCourse && crossedInsideCourse) {
         this.finish(marble.id);
       } else if (!insideCourse || body.y >= NOTME_COURSE.goalY) {
         // 이탈로 전진 이득을 얻지 않도록 각 구슬의 확정된 시작 위치로 복귀한다.
