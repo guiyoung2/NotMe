@@ -14,13 +14,13 @@ const toLines = (points: readonly CoursePoint[]): LineObstacle[] => points.slice
 const LEFT_CORRIDOR = [
   { x: 0, y: 0 }, { x: 4, y: 12 }, { x: 2, y: 24 }, { x: 5.5, y: 32 },
   { x: 2.5, y: 43 }, { x: 2.5, y: 57 }, { x: 3, y: 62 }, { x: 3, y: 76 },
-  { x: 1.5, y: 86 }, { x: 4.5, y: 96 }, { x: 2, y: 106 }, { x: 6.5, y: 108 },
+  { x: 5, y: 86 }, { x: 5, y: 108 }, { x: 12.4, y: 118 },
 ] as const satisfies readonly CoursePoint[];
 
 const RIGHT_CORRIDOR = [
   { x: 26, y: 0 }, { x: 22, y: 13 }, { x: 24, y: 25 }, { x: 20.5, y: 34 },
   { x: 24, y: 45 }, { x: 23.5, y: 57 }, { x: 23, y: 62 }, { x: 23, y: 76 },
-  { x: 24.5, y: 87 }, { x: 21.5, y: 97 }, { x: 24, y: 107 }, { x: 19.5, y: 108 },
+  { x: 22, y: 87 }, { x: 22, y: 108 }, { x: 13.6, y: 118 },
 ] as const satisfies readonly CoursePoint[];
 
 export const NOTME_COURSE: CourseDefinition = {
@@ -139,8 +139,8 @@ export const NOTME_COURSE: CourseDefinition = {
           angularVelocity: 2,
         },
         B(16, 80, 2.2, 0.35, -0.3, 0.2),
-        B(22, 87, 1.0, 1.0, Math.PI / 4, 0.75),
-        { kind: 'line', from: { x: 4, y: 90 }, to: { x: 8, y: 94 } },
+        B(19, 87, 1.0, 1.0, Math.PI / 4, 0.75),
+        { kind: 'line', from: { x: 6, y: 90 }, to: { x: 10, y: 94 } },
         B(12.5, 95, 2.4, 0.35, 0.25, 0.2),
         {
           kind: 'spinner', id: 'spinner:lower-right',
@@ -149,7 +149,7 @@ export const NOTME_COURSE: CourseDefinition = {
           angle: -Math.PI / 5,
           angularVelocity: -1.7,
         },
-        B(4, 103, 1.0, 1.0, Math.PI / 4, 0.8),
+        B(7, 103, 1.0, 1.0, Math.PI / 4, 0.8),
         B(11, 107, 2.2, 0.35, -0.3, 0.2),
         B(17, 107, 1.0, 1.0, Math.PI / 4, 0.75),
       ],
@@ -157,19 +157,15 @@ export const NOTME_COURSE: CourseDefinition = {
     {
       kind: 'finish',
       obstacles: [
-        { kind: 'line', from: { x: 6.5, y: 108 }, to: { x: 6.5, y: 119 } },
-        { kind: 'line', from: { x: 19.5, y: 108 }, to: { x: 19.5, y: 119 } },
-        { kind: 'line', from: { x: 6.5, y: 119 }, to: { x: 12.4, y: 126 } },
-        { kind: 'line', from: { x: 19.5, y: 119 }, to: { x: 13.6, y: 126 } },
         {
           kind: 'spinner', id: 'spinner:finish-gate',
-          center: { x: 11.75, y: 126 },
+          center: { x: 11.25, y: 118 },
           length: 3,
           angle: 0,
           angularVelocity: -1.2,
         },
-        { kind: 'line', from: { x: 12.4, y: 126 }, to: { x: 12.4, y: 135 } },
-        { kind: 'line', from: { x: 13.6, y: 126 }, to: { x: 13.6, y: 135 } },
+        { kind: 'line', from: { x: 12.4, y: 118 }, to: { x: 12.4, y: 135 } },
+        { kind: 'line', from: { x: 13.6, y: 118 }, to: { x: 13.6, y: 135 } },
       ],
     },
   ],
