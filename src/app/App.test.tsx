@@ -35,6 +35,7 @@ describe('App', () => {
     ['스톱워치', '/stopwatch'],
     ['사다리 타기', '/ladder'],
     ['마블 룰렛', '/marble'],
+    ['손가락 추첨', '/finger'],
   ])('%s 링크가 올바른 경로를 가리킨다', (name, href) => {
     render(<App />);
     expect(screen.getByRole('link', { name: new RegExp(name) })).toHaveAttribute('href', href);
@@ -45,6 +46,7 @@ describe('App', () => {
     ['/stopwatch', '스톱워치'],
     ['/ladder', '사다리 타기'],
     ['/marble', '마블 룰렛'],
+    ['/finger', '손가락 추첨'],
   ])('%s 루트 배포 경로를 렌더링한다', (pathname, heading) => {
     window.history.replaceState({}, '', pathname);
 
@@ -53,7 +55,7 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
   });
 
-  it.each(['/stopwatch', '/ladder', '/marble'])('%s 직접 경로에서도 서비스 워커를 등록한다', (pathname) => {
+  it.each(['/stopwatch', '/ladder', '/marble', '/finger'])('%s 직접 경로에서도 서비스 워커를 등록한다', (pathname) => {
     window.history.replaceState({}, '', pathname);
 
     render(<App />);
@@ -61,7 +63,7 @@ describe('App', () => {
     expect(useRegisterSW).toHaveBeenCalledTimes(1);
   });
 
-  it.each(['/stopwatch', '/ladder', '/marble'])('%s에서는 업데이트 버튼을 표시하지 않는다', (pathname) => {
+  it.each(['/stopwatch', '/ladder', '/marble', '/finger'])('%s에서는 업데이트 버튼을 표시하지 않는다', (pathname) => {
     useRegisterSW.mockReturnValue({
       needRefresh: [true, vi.fn()],
       offlineReady: [false, vi.fn()],
@@ -90,6 +92,13 @@ describe('App', () => {
 
     expect(screen.getByLabelText('참가자 1 이름')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '레이스 시작' })).toBeDisabled();
+  });
+
+  it('손가락 추첨 경로에 실제 터치 화면을 렌더링한다', () => {
+    window.history.replaceState({}, '', '/finger');
+    render(<App />);
+
+    expect(screen.getByTestId('finger-touch-field')).toBeInTheDocument();
   });
 
   it('/ladder에서 설정, 개별 공개, 전체 공개, 초기화 흐름을 실행한다', async () => {

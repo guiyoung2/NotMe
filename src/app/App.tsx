@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { LadderPage } from '../features/ladder/LadderPage';
 import { MarblePage } from '../features/marble/MarblePage';
 import { StopwatchPage } from '../features/stopwatch/StopwatchPage';
+import { FingerDrawPage } from '../features/finger/FingerDrawPage';
 import { HomePage } from './HomePage';
 import { ServiceWorkerManager } from './ReloadPrompt';
 
@@ -15,6 +16,7 @@ export function App(): JSX.Element {
           <Route path="/stopwatch" element={<StopwatchPage />} />
           <Route path="/ladder" element={<LadderPage />} />
           <Route path="/marble" element={<MarblePage />} />
+          <Route path="/finger" element={<FingerDrawPage />} />
         </Routes>
       </ServiceWorkerManager>
     </BrowserRouter>
