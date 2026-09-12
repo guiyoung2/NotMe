@@ -5,12 +5,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:e2e": "VITE_E2E=true npm run build",
+    "build:e2e": "node scripts/build-e2e.mjs",
     "preview": "vite preview",
     "test": "vitest run --exclude 'e2e/**' --exclude '.worktrees/**'",
     "test:watch": "vitest --exclude 'e2e/**' --exclude '.worktrees/**'",
     "test:e2e": "playwright test",
-    "test:production": "NOTME_PRODUCTION_CHECK=true playwright test e2e/marble.spec.ts --grep '빌드 설정'",
+    "test:production": "node scripts/run-production-check.mjs",
     "typecheck": "tsc -b",
     "lint": "tsc -b --pretty false",
     "verify": "npm run lint && npm test && npm run build && npm run test:production && npm run build:e2e && npm run test:e2e -- --workers=1"
