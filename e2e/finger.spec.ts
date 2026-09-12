@@ -20,6 +20,17 @@ test('손가락 추첨은 두 포인터 뒤 3초에 결과를 표시하고 다�
   await expect(page.getByText('화면에 손가락을 올려주세요')).toBeVisible();
 });
 
+test('최대 10개의 포인터를 참가자로 유지한다', async ({ page }) => {
+  await page.goto('/finger');
+  const field = page.getByTestId('finger-touch-field');
+
+  for (let pointerId = 1; pointerId <= 10; pointerId += 1) {
+    await sendPointer(field, pointerId, pointerId * 24, pointerId * 36);
+  }
+
+  await expect(field.locator('.finger-draw-finger')).toHaveCount(10);
+});
+
 test('카운트다운 중 참가자가 바뀌면 다시 시작 안내를 표시한다', async ({ page }) => {
   await page.goto('/finger');
   const field = page.getByTestId('finger-touch-field');
