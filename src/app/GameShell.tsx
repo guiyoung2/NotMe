@@ -6,12 +6,13 @@ type GameShellProps = {
   title: string;
   dirty: boolean;
   onReset: () => void;
+  showReset?: boolean;
   children: ReactNode;
 };
 
 type ConfirmationAction = 'home' | 'reset' | null;
 
-export function GameShell({ title, dirty, onReset, children }: GameShellProps): JSX.Element {
+export function GameShell({ title, dirty, onReset, showReset = true, children }: GameShellProps): JSX.Element {
   const navigate = useNavigate();
   const [confirmationAction, setConfirmationAction] = useState<ConfirmationAction>(null);
   const dialogRef = useRef<HTMLElement>(null);
@@ -101,16 +102,19 @@ export function GameShell({ title, dirty, onReset, children }: GameShellProps): 
             </svg>
           </button>
           <h1>{title}</h1>
-          <button
-            ref={resetButtonRef}
-            type="button"
-            onClick={() => {
-              triggerRef.current = resetButtonRef.current;
-              setConfirmationAction('reset');
-            }}
-          >
-            초기화
-          </button>
+          {showReset && (
+            <button
+              ref={resetButtonRef}
+              className="game-shell__reset-button"
+              type="button"
+              onClick={() => {
+                triggerRef.current = resetButtonRef.current;
+                setConfirmationAction('reset');
+              }}
+            >
+              초기화
+            </button>
+          )}
         </header>
         <main className="game-shell__main">{children}</main>
       </div>

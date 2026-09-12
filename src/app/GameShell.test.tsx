@@ -73,6 +73,16 @@ describe('GameShell', () => {
     expect(screen.getByText('/stopwatch')).toBeInTheDocument();
   });
 
+  it('초기화 버튼을 숨길 수 있다', () => {
+    render(
+      <MemoryRouter>
+        <GameShell title="테스트" dirty={false} onReset={vi.fn()} showReset={false}>내용</GameShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole('button', { name: '초기화' })).not.toBeInTheDocument();
+  });
+
   it('확인창을 열면 취소 버튼으로 포커스를 옮긴다', async () => {
     const user = userEvent.setup();
     renderShell({ dirty: true });

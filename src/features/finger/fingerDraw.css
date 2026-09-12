@@ -1,0 +1,56 @@
+.finger-draw-page { min-height: calc(100dvh - 108px); }
+
+.finger-draw-field {
+  position: relative;
+  min-height: calc(100dvh - 108px);
+  overflow: hidden;
+  isolation: isolate;
+  touch-action: none;
+  user-select: none;
+  overscroll-behavior: contain;
+  background: radial-gradient(circle at 50% 46%, rgb(255 181 94 / 0.07), transparent 34%);
+}
+
+.finger-draw-copy {
+  position: absolute;
+  z-index: 2;
+  top: 44%;
+  left: 50%;
+  width: min(92%, 360px);
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.finger-draw-copy h2 { margin: 0; color: var(--color-text); font-size: clamp(0.95rem, 4.8vw, 1.5rem); font-weight: 600; white-space: nowrap; }
+.finger-draw-copy p { margin-top: 10px; color: var(--color-muted); }
+
+.finger-draw-count { display: block; margin-bottom: 4px; color: var(--color-accent); font-size: clamp(4rem, 22vw, 5.5rem); font-weight: 700; line-height: 1; }
+
+.finger-draw-finger {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  width: 78px;
+  height: 78px;
+  transform: translate(-50%, -50%);
+  border: 3px solid rgb(255 255 255 / 0.72);
+  border-radius: 50%;
+  background: var(--finger-color);
+  box-shadow: 0 0 0 10px color-mix(in srgb, var(--finger-color), transparent 76%);
+}
+
+.finger-draw-finger--counting { animation: finger-draw-breathe 900ms ease-in-out infinite alternate; }
+.finger-draw-finger--selected { z-index: 3; width: 104px; height: 104px; box-shadow: 0 0 0 16px color-mix(in srgb, var(--finger-color), transparent 68%), 0 0 42px var(--finger-color); }
+.finger-draw-finger--dimmed { opacity: 0.22; filter: saturate(0.35); }
+
+.finger-draw-replay { position: absolute; z-index: 4; right: 20px; bottom: 20px; left: 20px; }
+
+@keyframes finger-draw-breathe {
+  from { transform: translate(-50%, -50%) scale(0.9); }
+  to { transform: translate(-50%, -50%) scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finger-draw-finger--counting { animation: none; }
+}

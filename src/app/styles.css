@@ -67,7 +67,7 @@ h2 { margin-top: 40px; font-size: 1rem; font-weight: 600; color: var(--color-mut
 .game-shell__home-button { position: absolute; left: 0; display: grid; width: 44px; min-height: 44px; padding: 0; place-items: center; border-color: transparent; border-radius: 50%; color: var(--color-muted); background: transparent; }
 .game-shell__home-button:hover { color: var(--color-text); background: var(--color-surface); }
 .game-shell__home-button svg { width: 21px; height: 21px; fill: currentColor; }
-.game-shell__header button:last-child { position: absolute; right: 0; }
+.game-shell__reset-button { position: absolute; right: 0; }
 .game-shell__main { padding-top: 32px; }
 .placeholder-game { color: var(--color-muted); }
 
