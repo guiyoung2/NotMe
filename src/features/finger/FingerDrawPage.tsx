@@ -75,8 +75,14 @@ export function FingerDrawPage(): JSX.Element {
   }
 
   function handlePointerStart(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.target instanceof Element && event.target.closest('button')) return;
+
     event.preventDefault();
-    event.currentTarget.setPointerCapture?.(event.pointerId);
+    try {
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    } catch {
+      // 합성 포인터나 일부 브라우저는 활성 포인터가 아니면 캡처를 거부한다.
+    }
     const { x, y } = pointerPosition(event);
     updateClockAndDispatch({ type: 'touch-start', id: event.pointerId, x, y, now: 0 });
   }

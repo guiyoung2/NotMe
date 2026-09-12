@@ -41,11 +41,12 @@ async function fillMarbleSettings(page: Page) {
   await page.getByRole('switch', { name: '스킬 사용' }).check();
 }
 
-test('홈에서 세 게임으로 이동할 수 있다', async ({ page }) => {
+test('홈에서 손가락 추첨으로 이동할 수 있다', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: '게임 선택' })).toBeVisible();
-  await page.getByRole('link', { name: /스톱워치/ }).click();
-  await expect(page).toHaveURL(/\/stopwatch$/);
+  await page.getByRole('link', { name: /손가락 추첨/ }).click();
+  await expect(page).toHaveURL(/\/finger$/);
+  await expect(page.getByTestId('finger-touch-field')).toBeVisible();
 });
 
 test('스톱워치에서 저장된 게임을 홈으로 종료하면 초기 설정으로 돌아간다', async ({ page }) => {
