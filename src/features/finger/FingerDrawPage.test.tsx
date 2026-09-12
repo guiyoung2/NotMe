@@ -65,4 +65,14 @@ describe('FingerDrawPage', () => {
 
     expect(screen.queryByRole('button', { name: '초기화' })).not.toBeInTheDocument();
   });
+
+  it('카운트다운 중 홈으로 이동할 때 종료 확인을 요청한다', () => {
+    const field = renderPage();
+    fireEvent.pointerDown(field, { pointerId: 1, clientX: 40, clientY: 80 });
+    fireEvent.pointerDown(field, { pointerId: 2, clientX: 120, clientY: 180 });
+
+    fireEvent.click(screen.getByRole('button', { name: '홈으로' }));
+
+    expect(screen.getByRole('dialog', { name: '현재 게임을 종료할까요?' })).toBeInTheDocument();
+  });
 });

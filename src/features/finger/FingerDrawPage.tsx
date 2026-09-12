@@ -99,7 +99,7 @@ export function FingerDrawPage(): JSX.Element {
   const isChangedCountdown = state.phase === 'countdown' && state.countdownReason === 'changed';
 
   return (
-    <GameShell title="손가락 추첨" dirty={false} onReset={() => dispatch({ type: 'reset' })} showReset={false}>
+    <GameShell title="손가락 추첨" dirty={state.phase !== 'waiting'} onReset={() => dispatch({ type: 'reset' })} showReset={false}>
       <section className="finger-draw-page">
         <div
           className="finger-draw-field"
